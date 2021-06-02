@@ -24,7 +24,9 @@ jobs: #run in parallel, on a diff runner each
           - 5432:5432
     steps:
       - name: cd into right folder
-        run: cd backend
+        run: |
+          ls -la
+          cd backend
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
