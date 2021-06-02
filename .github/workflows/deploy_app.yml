@@ -32,8 +32,8 @@ jobs: #run in parallel, on a diff runner each
       - name: Migrate database
         working-directory: ./backend
         run: |
-          #sudo apt-get install libpq-dev -y
-          #cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
+          sudo apt-get install libpq-dev -y
+          cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
           SKIP_DOCKER=true scripts/init_db.sh
       - uses: actions-rs/clippy-check@v1
         with:
