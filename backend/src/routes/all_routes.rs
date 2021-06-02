@@ -1,4 +1,8 @@
-use actix_web::{get, web, HttpResponse, Responder, Result};
+use actix_web::{get, web, HttpResponse, Responder};
+use chrono::Utc;
+use serde_json::Value;
+use sqlx::PgPool;
+use uuid::Uuid;
 
 // ----------------------------------------------------------------------------- structs & enums
 
@@ -67,7 +71,40 @@ pub async fn hello() -> impl Responder {
 }
 
 #[get("/tweets4")]
-pub async fn tweets4(form: web::Query<TweetParams>) -> Result<String> {
+pub async fn tweets4(
+    form: web::Query<TweetParams>,
+    pool: web::Data<PgPool>,
+) -> Result<HttpResponse, HttpResponse> {
     println!("{} {:?} {:?}", form.page, form.sort_by, form.timeframe);
-    Ok("worked".into())
+
+    let fake_json_data = r#"
+    { "name": "hi" }
+    "#;
+
+    let v: Value = serde_json::from_str(fake_json_data)
+        .map_err(|_| HttpResponse::InternalServerError().finish())?;
+
+    sqlx::query!(
+        r#"
+        INSERT INTO users
+        (id, created_at, twitter_user_id, twitter_name, twitter_handle, profile_image, profile_url, entire_user)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        "#,
+        Uuid::new_v4(),
+        Utc::now(),
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        v,
+    )
+        .execute(pool.as_ref())
+        .await
+        .map_err(|e| {
+            println!("error is {}", e);
+            HttpResponse::InternalServerError().finish()
+        })?;
+
+    Ok(HttpResponse::Ok().finish())
 }
