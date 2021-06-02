@@ -18,7 +18,7 @@ jobs: #run in parallel, on a diff runner each
         image: postgres:13
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: password
+          POSTGRES_PASSWORD: dbpw 
           POSTGRES_DB: solwtf
         ports:
           - 5432:5432
