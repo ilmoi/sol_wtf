@@ -23,6 +23,8 @@ jobs: #run in parallel, on a diff runner each
         ports:
           - 5432:5432
     steps:
+      - name: cd into right folder
+        run: cd backend
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -37,7 +39,7 @@ jobs: #run in parallel, on a diff runner each
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: --manifest-path ./backend/Cargo.toml -- -D warnings
+          args: -- -D warnings
 
   fmt:
     name: rustfmt
