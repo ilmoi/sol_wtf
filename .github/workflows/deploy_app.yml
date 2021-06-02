@@ -23,10 +23,6 @@ jobs: #run in parallel, on a diff runner each
         ports:
           - 5432:5432
     steps:
-      - name: cd into right folder
-        run: |
-          ls -la
-          cd backend
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
@@ -34,11 +30,13 @@ jobs: #run in parallel, on a diff runner each
           override: true
           components: clippy
       - name: Migrate database
+        working-directory: ./backend
         run: |
           sudo apt-get install libpq-dev -y
           cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
           SKIP_DOCKER=true ./backend/scripts/init_db.sh
       - uses: actions-rs/clippy-check@v1
+        working-directory: ./backend
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: -- -D warnings
