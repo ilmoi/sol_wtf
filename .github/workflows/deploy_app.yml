@@ -33,11 +33,11 @@ jobs: #run in parallel, on a diff runner each
         run: |
           sudo apt-get install libpq-dev -y
           cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
-          SKIP_DOCKER=true ./scripts/init_db.sh
+          SKIP_DOCKER=true ./backend/scripts/init_db.sh
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: -- -D warnings
+          args: --manifest-path ./backend/Cargo.toml -- -D warnings
 
   fmt:
     name: rustfmt
@@ -52,5 +52,5 @@ jobs: #run in parallel, on a diff runner each
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
-          args: --all -- --check
+          args: --all --manifest-path ./backend/Cargo.toml -- --check 
 
