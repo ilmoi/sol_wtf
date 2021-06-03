@@ -1,13 +1,14 @@
 use actix_cors::Cors;
 use actix_web::dev::Server;
 use actix_web::middleware::Logger;
-use actix_web::{http, App, HttpServer};
+use actix_web::{http, web, App, HttpServer};
 
-use crate::routes::all_routes::hello;
-use crate::routes::all_routes::tweets4;
+use crate::routes::all_routes::{hello, pull, tweets4};
 use sqlx::PgPool;
 
 pub fn run(addr: &str, pg_pool: PgPool) -> Result<Server, std::io::Error> {
+    let pool = web::Data::new(pg_pool); //important - else get https://stackoverflow.com/questions/56117273/actix-web-reports-app-data-is-not-configured-when-processing-a-file-upload
+
     let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("http://localhost:8080")
@@ -21,7 +22,8 @@ pub fn run(addr: &str, pg_pool: PgPool) -> Result<Server, std::io::Error> {
             .wrap(Logger::default())
             .service(hello)
             .service(tweets4)
-            .app_data(pg_pool.clone())
+            .service(pull)
+            .app_data(pool.clone())
     })
     .bind(addr)?
     .run();

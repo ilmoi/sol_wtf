@@ -9,6 +9,7 @@ async fn main() -> std::io::Result<()> {
 
     let config = get_config().expect("failed to read settings");
     let addr = format!("127.0.0.1:{}", config.app_port);
+
     let pg_pool = PgPool::connect(&config.database.connection_string())
         .await
         .expect("failed to connect to pg");
