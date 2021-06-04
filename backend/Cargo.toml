@@ -11,9 +11,8 @@ path = "src/lib.rs"
 path = "src/main.rs"
 name = "backend"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+#needed to fix https://github.com/actix/actix-extras/issues/176
 actix-cors = { git = "https://github.com/near/actix-extras.git", rev = "9e3c0b8" }
 actix-http = "3.0.0-beta.5"
 actix-service = "2.0.0-beta.5"

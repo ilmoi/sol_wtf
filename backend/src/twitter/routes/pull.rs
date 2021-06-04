@@ -12,7 +12,7 @@ use sqlx::PgPool;
 #[get("/pull")]
 pub async fn pull(pool: web::Data<PgPool>, config: web::Data<Arc<Settings>>) -> impl Responder {
     let config = config.as_ref().deref();
-    let body = get_user_timeline(config).await;
+    let body = get_user_timeline(config).await.unwrap();
 
     // store all users first
     let users = &body["includes"]["users"];

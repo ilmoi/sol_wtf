@@ -4,8 +4,8 @@ use actix_web::middleware::Logger;
 use actix_web::{http, web, App, HttpServer};
 
 use crate::config::Settings;
-use crate::twitter::routes::provide::{hello, tweets4};
 use crate::twitter::routes::pull::pull;
+use crate::twitter::routes::serve::{hello, tweets4};
 use sqlx::PgPool;
 use std::sync::Arc;
 

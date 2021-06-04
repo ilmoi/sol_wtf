@@ -11,10 +11,7 @@ pub struct Params {
     max_results: u32,
 }
 
-pub async fn get_user_timeline(config: &Settings) -> Value {
-    let client = reqwest::Client::new();
-    let bearer_token = &config.twitter.bearer_token;
-
+pub async fn get_user_timeline(config: &Settings) -> Result<Value, reqwest::Error> {
     let params = Params {
         expansions: String::from("author_id,referenced_tweets.id,referenced_tweets.id.author_id,in_reply_to_user_id,attachments.media_keys"),
         tweet___fields: String::from(
@@ -29,21 +26,25 @@ pub async fn get_user_timeline(config: &Settings) -> Value {
     let endpoint_params_raw = serde_url_params::to_string(&params).unwrap();
     //needed coz twitter has weird field namings with dots, and you can't have dots in struct fields
     let endpoint_params = endpoint_params_raw.replace("___", ".");
-
     let url = format!("{}?{}", endpoint_url, endpoint_params,);
 
-    println!("URL IS: {}", url);
+    let body = v2_api_get(&config, &url).await?;
+    Ok(body)
+}
+
+pub async fn v2_api_get(config: &Settings, url: &str) -> Result<Value, reqwest::Error> {
+    let client = reqwest::Client::new();
+    let bearer_token = &config.twitter.bearer_token;
 
     let res = client
         .get(url)
         .header("Authorization", format!("Bearer {}", bearer_token))
         .send()
-        .await
-        .expect("failed to get user timeline");
+        .await?;
 
     println!("Status: {}", res.status());
-    let body: Value = res.json().await.unwrap();
+    let body: Value = res.json().await?;
     println!("Body:\n\n{:#?}", &body);
 
-    body
+    Ok(body)
 }
