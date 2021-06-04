@@ -28,6 +28,7 @@ uuid = { version = "0.8.1", features = ["v4"] }
 derive_more = "0.99.14"
 reqwest = { version = "0.11.3", features = ["json"] }
 serde_url_params = "0.2.1"
+async-recursion = "0.3.2"
 
 [dependencies.sqlx]
 version = "0.5.1"

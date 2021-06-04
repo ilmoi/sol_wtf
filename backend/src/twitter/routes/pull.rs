@@ -2,8 +2,8 @@ use std::ops::Deref;
 use std::sync::Arc;
 
 use crate::config::Settings;
-use crate::twitter::domain::tweet::{fetch_tweet, store_tweet, update_tweet};
-use crate::twitter::domain::user::{fetch_user, store_user, update_user};
+use crate::twitter::domain::tweet::store_tweet;
+use crate::twitter::domain::user::store_user;
 use crate::twitter::scrapers::v2_api::get_user_timeline;
 use actix_web::{get, web, HttpResponse, Responder, ResponseError};
 
@@ -14,25 +14,33 @@ pub async fn pull(pool: web::Data<PgPool>, config: web::Data<Arc<Settings>>) -> 
     let config = config.as_ref().deref();
     let body = get_user_timeline(config).await.unwrap();
 
-    // store all users first
+    // store all users first (always at least 1 user (author) present, so .unwrap ok)
     let users = &body["includes"]["users"];
     for user in users.as_array().unwrap() {
-        let found_user = fetch_user(pool.as_ref(), &user["id"].as_str().unwrap()).await;
-        match found_user {
-            Ok(_u) => update_user(pool.as_ref(), &user).await.unwrap(),
-            Err(_e) => store_user(pool.as_ref(), &user).await.unwrap(),
+        store_user(pool.as_ref(), &user).await.unwrap();
+    }
+
+    // then store tweets (references users, so must go second) (always present, so .unwrap ok)
+    let tweets = &body["data"];
+    for tweet in tweets.as_array().unwrap() {
+        store_tweet(pool.as_ref(), &tweet, &body, "normal")
+            .await
+            .unwrap();
+    }
+
+    // finally store helper tweets (may/not be present)
+    let helper_tweets = &body["includes"]["tweets"].as_array();
+    if let Some(helper_ts) = helper_tweets {
+        for ht in helper_ts.iter() {
+            store_tweet(pool.as_ref(), &ht, &body, "helper")
+                .await
+                .unwrap();
         }
     }
 
-    // then store tweets (references users, so must go second)
-    let tweets = &body["data"];
-    for tweet in tweets.as_array().unwrap() {
-        let found_tweet = fetch_tweet(pool.as_ref(), &tweet["id"].as_str().unwrap()).await;
-        match found_tweet {
-            Ok(_t) => update_tweet(pool.as_ref(), &tweet).await.unwrap(),
-            Err(_e) => store_tweet(pool.as_ref(), &tweet, &body).await.unwrap(),
-        }
-    }
+    // for rt_original tweets fetch 1)media, 2)helper tweets (sorted by popularity)
+
+    // for all helper tweets fetch media (sorted by popularity)
 
     HttpResponse::Ok()
 }

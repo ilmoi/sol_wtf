@@ -1,9 +1,11 @@
-use crate::twitter::domain::media::store_all_media;
-use crate::twitter::domain::user;
+use async_recursion::async_recursion;
 use chrono::{DateTime, Utc};
 use serde_json::Value;
 use sqlx::types::Uuid;
 use sqlx::PgPool;
+
+use crate::twitter::domain::media::handle_media_for_tweet;
+use crate::twitter::domain::user::fetch_user;
 
 #[derive(sqlx::FromRow, Debug)]
 pub struct Tweet {
@@ -15,11 +17,12 @@ pub struct Tweet {
     pub tweet_url: String,
     // reference tweets
     pub replied_to_tweet_id: Option<String>,
-    pub is_reply: Option<bool>,
     pub quoted_tweet_id: Option<String>,
-    pub is_quote: Option<bool>,
-    pub retweeted_tweet_id: Option<String>,
-    pub is_retweet: Option<bool>,
+    pub tweet_class: String,
+    // pub is_reply: Option<bool>,
+    // pub is_quote: Option<bool>,
+    // pub retweeted_tweet_id: Option<String>,
+    // pub is_retweet: Option<bool>,
     // metrics
     pub like_count: Option<i64>,
     pub quote_count: Option<i64>,
@@ -30,6 +33,16 @@ pub struct Tweet {
     pub entire_tweet: Option<Value>,
     pub user_id: Uuid,
 }
+
+// todo switch to enums if can get it working - https://github.com/launchbadge/sqlx/issues/1004
+//  for SELECT - https://github.com/launchbadge/sqlx/issues/1038
+// #[allow(non_camel_case_types)]
+// #[derive(Debug, sqlx::Type)]
+// pub enum TweetClass {
+//     normal,
+//     rt_original,
+//     helper,
+// }
 
 pub async fn fetch_tweet(pool: &PgPool, tweet_id: &str) -> Result<Tweet, sqlx::error::Error> {
     let res = sqlx::query_as!(
@@ -74,14 +87,22 @@ pub fn extract_tweet_metrics(tweet: &Value) -> TweetMetrics {
 }
 
 // not ideal that we have to pass the body here, but I need the media array from "includes"
+#[async_recursion]
 pub async fn store_tweet(
     pool: &PgPool,
     tweet: &Value,
     body: &Value,
+    tweet_class: &str,
 ) -> Result<(), sqlx::error::Error> {
-    let author_id = tweet["author_id"].as_str().unwrap();
-    let author = user::fetch_user(&pool, author_id).await.unwrap();
+    // check if tweet already exists - if so, update it
     let tweet_id = tweet["id"].as_str().unwrap();
+    let found_tweet = fetch_tweet(&pool, tweet_id).await;
+    if let Ok(_) = found_tweet {
+        return update_tweet(&pool, &tweet).await;
+    }
+
+    let author_id = tweet["author_id"].as_str().unwrap();
+    let author = fetch_user(&pool, author_id).await.unwrap();
     let tweet_url = format!("https://twitter.com/{}/status/{}", &author_id, &tweet_id);
     let tweet_created_at =
         DateTime::parse_from_rfc3339(tweet["created_at"].as_str().unwrap()).unwrap();
@@ -89,15 +110,32 @@ pub async fn store_tweet(
     // handle reference tweets
     let mut replied_to_tweet_id: Option<String> = None;
     let mut quoted_tweet_id: Option<String> = None;
-    let mut retweeted_tweet_id: Option<String> = None;
+    // let mut retweeted_tweet_id: Option<String> = None; // todo search for all mentions of this and clean
 
     let ref_tweets = tweet.get("referenced_tweets");
     if let Some(ref_tweets) = ref_tweets {
         for rt in ref_tweets.as_array().unwrap() {
             match rt["type"].as_str().unwrap() {
+                "retweeted" => {
+                    // retweeted_tweet_id = Some(rt["id"].as_str().unwrap().into())
+
+                    // NOTE: returns from function, as we only care to store the original post
+                    let retweet_id = rt["id"].as_str().unwrap();
+                    println!(
+                        "Retweet detected, storing original tweet instead (id: {})",
+                        retweet_id
+                    );
+
+                    let retweet = body["includes"]["tweets"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .filter(|&t| t["id"].as_str().unwrap() == retweet_id)
+                        .collect::<Vec<&Value>>(); //todo is there a better way (single value) than .collect here?
+                    return store_tweet(&pool, &retweet[0], &body, "rt_original").await;
+                }
                 "replied_to" => replied_to_tweet_id = Some(rt["id"].as_str().unwrap().into()),
                 "quoted" => quoted_tweet_id = Some(rt["id"].as_str().unwrap().into()),
-                "retweeted" => retweeted_tweet_id = Some(rt["id"].as_str().unwrap().into()),
                 _ => println!("unrecognized referenced_tweet type"),
             }
         }
@@ -112,11 +150,10 @@ pub async fn store_tweet(
         INSERT INTO tweets
         (id, created_at,
         tweet_id, tweet_created_at, tweet_text, tweet_url,
-        replied_to_tweet_id, is_reply, quoted_tweet_id, is_quote, retweeted_tweet_id, is_retweet,
+        replied_to_tweet_id, quoted_tweet_id, tweet_class, 
         like_count, quote_count, reply_count, retweet_count, total_retweet_count, popularity_count,
         user_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18,
-        $19)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         "#,
         Uuid::new_v4(),
         Utc::now(),
@@ -125,11 +162,12 @@ pub async fn store_tweet(
         tweet["text"].as_str(),
         tweet_url,
         replied_to_tweet_id,
-        false,
         quoted_tweet_id,
-        false,
-        retweeted_tweet_id,
-        false,
+        tweet_class,
+        // retweeted_tweet_id,
+        // false,
+        // false,
+        // false,
         tweet_metrics.like_count,
         tweet_metrics.quote_count,
         tweet_metrics.reply_count,
@@ -142,22 +180,7 @@ pub async fn store_tweet(
     .await?;
 
     // handle media (IMPORTANT: must go after tweet itself, as references stored tweet id)
-    let media_keys = tweet["attachments"]["media_keys"].as_array();
-    if let Some(media_ks) = media_keys {
-        let media_objects = body["includes"]["media"].as_array();
-        if let Some(media_obj) = media_objects {
-            let filtered_media_obj = media_obj
-                .iter()
-                .filter(|&mo| {
-                    media_ks
-                        .iter()
-                        .any(|k| mo["media_key"].as_str().unwrap() == k.as_str().unwrap())
-                })
-                .collect::<Vec<&Value>>();
-
-            store_all_media(&pool, tweet_id, filtered_media_obj).await?;
-        }
-    }
+    handle_media_for_tweet(&pool, &tweet, &body).await?;
 
     println!("stored tweet with id {}", tweet["id"].as_str().unwrap());
     Ok(())

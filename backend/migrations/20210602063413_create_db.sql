@@ -1,3 +1,16 @@
+/*
+ There are 3 types of tweets that we distinguish:
+ 1. "normal" tweets = those posted by people we follow
+ 2. "rt_original" tweets = original tweets for any retweets done by the people we follow
+ 3. "helper" tweets = those that are quoted / replied to
+
+ Depending on the type of tweet, we process them differently. In v2 api:
+ 1. "normal" tweets already have all the data they need to display correctly returned in a call to user_timeline
+ 2. "rt_original" tweets are missing 1)media and 2)helper tweets, which we need to fill separately
+ 3. "helper" tweets are also missing 1) and 2) above, but we only care to pull 1)
+ */
+-- CREATE TYPE tweet_class AS ENUM ('normal', 'rt_original', 'helper');
+
 CREATE TABLE users
 (
     -- basics
@@ -38,11 +51,12 @@ CREATE TABLE tweets
 
     -- referenced tweets
     replied_to_tweet_id TEXT,
-    is_reply            BOOL   DEFAULT false,
     quoted_tweet_id     TEXT,
-    is_quote            BOOL   DEFAULT false,
-    retweeted_tweet_id  TEXT,
-    is_retweet          BOOL   DEFAULT false,
+    tweet_class         TEXT        NOT NULL,
+--     is_reply            BOOL   DEFAULT false,
+--     is_quote            BOOL   DEFAULT false,
+--     retweeted_tweet_id  TEXT,
+--     is_retweet          BOOL   DEFAULT false,
 
     -- v2 metrics
     like_count          BIGINT DEFAULT 0,
@@ -65,17 +79,17 @@ CREATE TABLE tweets
 CREATE TABLE media
 (
     -- basics
-    id                uuid        NOT NULL,
+    id          uuid        NOT NULL,
     PRIMARY KEY (id),
-    created_at        timestamptz NOT NULL,
+    created_at  timestamptz NOT NULL,
 
     -- core twitter stuff
-    media_key         TEXT        NOT NULL UNIQUE,
-    media_type        TEXT        NOT NULL,
-    preview_image_url TEXT,
+    media_key   TEXT        NOT NULL UNIQUE,
+    media_type  TEXT,
+    display_url TEXT,
 
     -- relation to tweets
-    tweet_id          uuid        NOT NULL,
+    tweet_id    uuid        NOT NULL,
     FOREIGN KEY (tweet_id)
         REFERENCES tweets (id)
 )

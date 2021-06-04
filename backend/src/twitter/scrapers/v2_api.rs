@@ -18,7 +18,7 @@ pub async fn get_user_timeline(config: &Settings) -> Result<Value, reqwest::Erro
             "created_at,in_reply_to_user_id,public_metrics,referenced_tweets",
         ),
         user___fields: String::from("name,username,profile_image_url,url,public_metrics"),
-        media___fields: String::from("preview_image_url"),
+        media___fields: String::from("preview_image_url,url"),
         max_results: 100,
     };
 

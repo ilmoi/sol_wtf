@@ -35,6 +35,13 @@ pub async fn fetch_user(pool: &PgPool, user_id: &str) -> Result<User, sqlx::erro
 }
 
 pub async fn store_user(pool: &PgPool, user: &Value) -> Result<(), sqlx::error::Error> {
+    // check if user already exists - if so, update it
+    let user_id = user["id"].as_str().unwrap();
+    let found_user = fetch_user(&pool, user_id).await;
+    if let Ok(_) = found_user {
+        return update_user(&pool, &user).await;
+    }
+
     sqlx::query!(
         r#"
         INSERT INTO users
@@ -45,7 +52,7 @@ pub async fn store_user(pool: &PgPool, user: &Value) -> Result<(), sqlx::error::
         "#,
         Uuid::new_v4(),
         Utc::now(),
-        user["id"].as_str(),
+        user_id,
         user["name"].as_str(),
         user["username"].as_str(),
         user["url"].as_str(),
