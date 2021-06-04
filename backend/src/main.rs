@@ -14,5 +14,5 @@ async fn main() -> std::io::Result<()> {
         .await
         .expect("failed to connect to pg");
 
-    run(&addr, pg_pool)?.await
+    run(&addr, pg_pool, config)?.await
 }

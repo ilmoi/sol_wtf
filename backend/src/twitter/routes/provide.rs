@@ -1,8 +1,5 @@
-use actix_web::{get, web, HttpResponse, Responder, ResponseError};
-use chrono::Utc;
-use serde_json::Value;
+use actix_web::{get, web, HttpResponse, Responder};
 use sqlx::PgPool;
-use uuid::Uuid;
 
 // ----------------------------------------------------------------------------- structs & enums
 
@@ -77,46 +74,3 @@ pub async fn tweets4(form: web::Query<TweetParams>, pool: web::Data<PgPool>) -> 
     println!("{:?}", pool);
     HttpResponse::Ok().body("hey from tweets4 endpoint!")
 }
-
-#[get("/pull")]
-pub async fn pull(pool: web::Data<PgPool>) -> impl Responder {
-    let fake_json_data = r#"
-    { "name": "hi" }
-    "#;
-
-    let v: Value = serde_json::from_str(fake_json_data).unwrap();
-
-    sqlx::query!(
-        r#"
-        INSERT INTO users
-        (id, created_at, twitter_user_id, twitter_name, twitter_handle, profile_image, profile_url, entire_user)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        "#,
-        Uuid::new_v4(),
-        Utc::now(),
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        v,
-    )
-        .execute(pool.as_ref())
-        .await
-        .unwrap();
-
-    HttpResponse::Ok()
-}
-
-// ----------------------------------------------------------------------------- errors
-
-#[derive(Debug)]
-pub struct MyError(String);
-
-impl std::fmt::Display for MyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "A validation error occured on the input.")
-    }
-}
-
-impl ResponseError for MyError {}

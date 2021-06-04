@@ -1,7 +1,8 @@
 #[derive(serde::Deserialize)]
 pub struct Settings {
-    pub database: DbSettings,
     pub app_port: u16,
+    pub database: DbSettings,
+    pub twitter: TwitterSettings,
 }
 
 #[derive(serde::Deserialize)]
@@ -11,6 +12,15 @@ pub struct DbSettings {
     pub port: u16,
     pub host: String,
     pub db_name: String,
+}
+
+#[derive(serde::Deserialize)]
+pub struct TwitterSettings {
+    pub consumer_key: String,
+    pub consumer_secret: String,
+    pub access_token: String,
+    pub access_token_secret: String,
+    pub bearer_token: String,
 }
 
 impl DbSettings {

@@ -9,11 +9,19 @@ CREATE TABLE users
     twitter_user_id TEXT        NOT NULL UNIQUE,
     twitter_name    TEXT        NOT NULL,
     twitter_handle  TEXT        NOT NULL,
-    profile_image   TEXT, -- can be null? didn't dig into
     profile_url     TEXT        NOT NULL,
-    entire_user     json        NOT NULL
-);
+    profile_image   TEXT, -- can be null? didn't dig into
 
+    -- v2 metrics
+    followers_count BIGINT DEFAULT 0,
+    following_count BIGINT DEFAULT 0,
+    listed_count    BIGINT DEFAULT 0,
+    tweet_count     BIGINT DEFAULT 0,
+
+    -- v1 backup
+    entire_user     json
+
+);
 
 CREATE TABLE tweets
 (
@@ -28,23 +36,24 @@ CREATE TABLE tweets
     tweet_text          TEXT        NOT NULL,
     tweet_url           TEXT        NOT NULL,
 
-    -- metrics
-    reply_count         INT  DEFAULT 0,
-    like_count          INT  DEFAULT 0,
-    quote_count         INT  DEFAULT 0,
-    retweet_count       INT  DEFAULT 0,
-    total_retweet_count INT  DEFAULT 0,
-    popularity_count    INT  DEFAULT 0,
+    -- referenced tweets
+    replied_to_tweet_id TEXT,
+    is_reply            BOOL   DEFAULT false,
+    quoted_tweet_id     TEXT,
+    is_quote            BOOL   DEFAULT false,
+    retweeted_tweet_id  TEXT,
+    is_retweet          BOOL   DEFAULT false,
 
-    -- display
-    parent_tweet_id     TEXT,
-    is_parent           BOOL DEFAULT false,
---     quoted_tweet_id     TEXT, <currently pulling from json
---     is_quote            BOOL DEFAULT false,
---     media-related stuff < currently pulling from json
+    -- v2 metrics
+    like_count          BIGINT DEFAULT 0,
+    quote_count         BIGINT DEFAULT 0,
+    reply_count         BIGINT DEFAULT 0,
+    retweet_count       BIGINT DEFAULT 0,
+    total_retweet_count BIGINT DEFAULT 0,
+    popularity_count    BIGINT DEFAULT 0,
 
-    -- backup
-    entire_tweet        json        NOT NULL,
+    -- v1 backup
+    entire_tweet        json,
 
     -- relation to users
     user_id             uuid        NOT NULL,
@@ -52,3 +61,21 @@ CREATE TABLE tweets
         REFERENCES users (id)
 
 );
+
+CREATE TABLE media
+(
+    -- basics
+    id                uuid        NOT NULL,
+    PRIMARY KEY (id),
+    created_at        timestamptz NOT NULL,
+
+    -- core twitter stuff
+    media_key         TEXT        NOT NULL UNIQUE,
+    media_type        TEXT        NOT NULL,
+    preview_image_url TEXT,
+
+    -- relation to tweets
+    tweet_id          uuid        NOT NULL,
+    FOREIGN KEY (tweet_id)
+        REFERENCES tweets (id)
+)
