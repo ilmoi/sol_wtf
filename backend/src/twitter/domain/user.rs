@@ -1,9 +1,10 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::types::Uuid;
 use sqlx::PgPool;
 
-#[derive(sqlx::FromRow, Debug)]
+#[derive(sqlx::FromRow, Debug, Serialize, Deserialize)]
 pub struct User {
     pub id: Uuid,
     pub created_at: DateTime<Utc>,
@@ -31,6 +32,21 @@ pub async fn fetch_user(pool: &PgPool, user_id: &str) -> Result<User, sqlx::erro
     .await?;
 
     println!("fetched user with id {}", user_id);
+    Ok(res)
+}
+
+pub async fn fetch_user_by_uuid(pool: &PgPool, id: Uuid) -> Result<User, sqlx::error::Error> {
+    let res = sqlx::query_as!(
+        User,
+        r#"
+        SELECT * FROM users WHERE id = $1
+        "#,
+        id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    println!("fetched user with id {}", id);
     Ok(res)
 }
 
