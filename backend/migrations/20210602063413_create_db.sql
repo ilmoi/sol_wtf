@@ -53,10 +53,6 @@ CREATE TABLE tweets
     replied_to_tweet_id TEXT,
     quoted_tweet_id     TEXT,
     tweet_class         TEXT        NOT NULL,
---     is_reply            BOOL   DEFAULT false,
---     is_quote            BOOL   DEFAULT false,
---     retweeted_tweet_id  TEXT,
---     is_retweet          BOOL   DEFAULT false,
 
     -- v2 metrics
     like_count          BIGINT DEFAULT 0,

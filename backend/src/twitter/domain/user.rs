@@ -20,6 +20,8 @@ pub struct User {
     pub entire_user: Option<Value>,
 }
 
+// ----------------------------------------------------------------------------- fn
+
 pub async fn fetch_user(pool: &PgPool, user_id: &str) -> Result<User, sqlx::error::Error> {
     let res = sqlx::query_as!(
         User,
@@ -30,8 +32,6 @@ pub async fn fetch_user(pool: &PgPool, user_id: &str) -> Result<User, sqlx::erro
     )
     .fetch_one(pool)
     .await?;
-
-    println!("fetched user with id {}", user_id);
     Ok(res)
 }
 
@@ -45,8 +45,6 @@ pub async fn fetch_user_by_uuid(pool: &PgPool, id: Uuid) -> Result<User, sqlx::e
     )
     .fetch_one(pool)
     .await?;
-
-    println!("fetched user with id {}", id);
     Ok(res)
 }
 
@@ -54,7 +52,7 @@ pub async fn store_user(pool: &PgPool, user: &Value) -> Result<(), sqlx::error::
     // check if user already exists - if so, update it
     let user_id = user["id"].as_str().unwrap();
     let found_user = fetch_user(&pool, user_id).await;
-    if let Ok(_) = found_user {
+    if found_user.is_ok() {
         return update_user(&pool, &user).await;
     }
 
@@ -80,8 +78,6 @@ pub async fn store_user(pool: &PgPool, user: &Value) -> Result<(), sqlx::error::
     )
     .execute(pool)
     .await?;
-
-    println!("stored user with id {}", user["id"].as_str().unwrap());
     Ok(())
 }
 
@@ -111,7 +107,5 @@ pub async fn update_user(pool: &PgPool, user: &Value) -> Result<(), sqlx::error:
     )
     .execute(pool)
     .await?;
-
-    println!("updated user with id {}", user["id"].as_str().unwrap());
     Ok(())
 }

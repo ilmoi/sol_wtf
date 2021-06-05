@@ -34,15 +34,14 @@ pub async fn v2_api_get(
 
     println!("Status: {}", res.status());
     let body: Value = res.json().await?;
-    println!("Body:\n\n{:#?}", &body);
-
+    // println!("Body:\n\n{:#?}", &body);
     Ok(body)
 }
 
 // ----------------------------------------------------------------------------- specific calls
 
 pub async fn get_user_timeline(config: &Settings, user_id: &str) -> Result<Value, reqwest::Error> {
-    let mut url = format!("https://api.twitter.com/2/users/{}/tweets", user_id);
+    let url = format!("https://api.twitter.com/2/users/{}/tweets", user_id);
     let params = Params {
         expansions: String::from("author_id,referenced_tweets.id,referenced_tweets.id.author_id,in_reply_to_user_id,attachments.media_keys"),
         tweet___fields: String::from(
@@ -57,7 +56,7 @@ pub async fn get_user_timeline(config: &Settings, user_id: &str) -> Result<Value
 }
 
 pub async fn get_single_tweet(config: &Settings, tweet_id: &str) -> Result<Value, reqwest::Error> {
-    let mut url = format!("https://api.twitter.com/2/tweets/{}", tweet_id);
+    let url = format!("https://api.twitter.com/2/tweets/{}", tweet_id);
     let params = Params {
         expansions: String::from("author_id,referenced_tweets.id,referenced_tweets.id.author_id,in_reply_to_user_id,attachments.media_keys"),
         tweet___fields: String::from(

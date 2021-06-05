@@ -32,6 +32,8 @@ impl DbSettings {
     }
 }
 
+// ----------------------------------------------------------------------------- fn
+
 pub fn get_config() -> Result<Settings, config::ConfigError> {
     let mut settings = config::Config::default();
 

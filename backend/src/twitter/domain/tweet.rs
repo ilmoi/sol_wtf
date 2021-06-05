@@ -1,11 +1,11 @@
 use async_recursion::async_recursion;
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
 use serde_json::Value;
 use sqlx::types::Uuid;
 use sqlx::PgPool;
 
-use crate::twitter::domain::media::{handle_media_for_tweet, Media};
-use crate::twitter::domain::user::{fetch_user, store_user, User};
+use crate::twitter::domain::media::handle_media_for_tweet;
+use crate::twitter::domain::user::fetch_user;
 use crate::twitter::routes::serve::TweetParams;
 use actix_web::web;
 use serde::{Deserialize, Serialize};
@@ -22,10 +22,6 @@ pub struct Tweet {
     pub replied_to_tweet_id: Option<String>,
     pub quoted_tweet_id: Option<String>,
     pub tweet_class: String,
-    // pub is_reply: Option<bool>,
-    // pub is_quote: Option<bool>,
-    // pub retweeted_tweet_id: Option<String>,
-    // pub is_retweet: Option<bool>,
     // metrics
     pub like_count: Option<i64>,
     pub quote_count: Option<i64>,
@@ -58,21 +54,6 @@ pub struct TweetMetrics {
 
 // ----------------------------------------------------------------------------- fn
 
-pub async fn fetch_tweet(pool: &PgPool, tweet_id: &str) -> Result<Tweet, sqlx::error::Error> {
-    let res = sqlx::query_as!(
-        Tweet,
-        r#"
-        SELECT * FROM tweets WHERE tweet_id = $1
-        "#,
-        tweet_id,
-    )
-    .fetch_one(pool)
-    .await?;
-
-    println!("fetched tweet with id {}", tweet_id);
-    Ok(res)
-}
-
 pub fn extract_tweet_metrics(tweet: &Value) -> TweetMetrics {
     let like_count = tweet["public_metrics"]["like_count"].as_i64().unwrap();
     let quote_count = tweet["public_metrics"]["quote_count"].as_i64().unwrap();
@@ -91,23 +72,37 @@ pub fn extract_tweet_metrics(tweet: &Value) -> TweetMetrics {
     }
 }
 
-// not ideal that we have to pass the body here, but I need the media array from "includes"
+pub async fn fetch_tweet(pool: &PgPool, tweet_id: &str) -> Result<Tweet, sqlx::error::Error> {
+    let res = sqlx::query_as!(
+        Tweet,
+        r#"
+        SELECT * FROM tweets WHERE tweet_id = $1
+        "#,
+        tweet_id,
+    )
+    .fetch_one(pool)
+    .await?;
+
+    println!("fetched tweet with id {}", tweet_id);
+    Ok(res)
+}
+
 #[async_recursion]
 pub async fn store_tweet(
     pool: &PgPool,
     tweet: &Value,
-    body: &Value,
+    body: &Value, // not ideal that we have to pass the body here, but I need the media array from "includes"
     tweet_class: &str,
 ) -> Result<(), sqlx::error::Error> {
     // check if tweet already exists - if so, update it
     let tweet_id = tweet["id"].as_str().unwrap();
     let found_tweet = fetch_tweet(&pool, tweet_id).await;
-    if let Ok(_) = found_tweet {
+    if found_tweet.is_ok() {
         return update_tweet(&pool, &tweet).await;
     }
 
     let author_id = tweet["author_id"].as_str().unwrap();
-    let author = fetch_user(&pool, author_id).await.unwrap();
+    let author = fetch_user(&pool, author_id).await?;
     let tweet_url = format!("https://twitter.com/{}/status/{}", &author_id, &tweet_id);
     let tweet_created_at =
         DateTime::parse_from_rfc3339(tweet["created_at"].as_str().unwrap()).unwrap();
@@ -115,22 +110,17 @@ pub async fn store_tweet(
     // handle reference tweets
     let mut replied_to_tweet_id: Option<String> = None;
     let mut quoted_tweet_id: Option<String> = None;
-    // let mut retweeted_tweet_id: Option<String> = None; // todo search for all mentions of this and clean
 
-    let ref_tweets = tweet.get("referenced_tweets");
-    if let Some(ref_tweets) = ref_tweets {
+    if let Some(ref_tweets) = tweet.get("referenced_tweets") {
         for rt in ref_tweets.as_array().unwrap() {
             match rt["type"].as_str().unwrap() {
                 "retweeted" => {
-                    // retweeted_tweet_id = Some(rt["id"].as_str().unwrap().into())
-
                     // NOTE: returns from function, as we only care to store the original post
                     let retweet_id = rt["id"].as_str().unwrap();
                     println!(
                         "Retweet detected, storing original tweet instead (id: {})",
                         retweet_id
                     );
-
                     let retweet = body["includes"]["tweets"]
                         .as_array()
                         .unwrap()
@@ -166,13 +156,11 @@ pub async fn store_tweet(
         tweet_created_at,
         tweet["text"].as_str(),
         tweet_url,
+        // reference tweets
         replied_to_tweet_id,
         quoted_tweet_id,
         tweet_class,
-        // retweeted_tweet_id,
-        // false,
-        // false,
-        // false,
+        // metrics
         tweet_metrics.like_count,
         tweet_metrics.quote_count,
         tweet_metrics.reply_count,
@@ -186,8 +174,6 @@ pub async fn store_tweet(
 
     // handle media (IMPORTANT: must go after tweet itself, as references stored tweet id)
     handle_media_for_tweet(&pool, &tweet, &body).await?;
-
-    println!("stored tweet with id {}", tweet["id"].as_str().unwrap());
     Ok(())
 }
 
@@ -214,8 +200,6 @@ pub async fn update_tweet(pool: &PgPool, tweet: &Value) -> Result<(), sqlx::erro
     )
     .execute(pool)
     .await?;
-
-    println!("updated tweet with id {}", tweet["id"].as_str().unwrap());
     Ok(())
 }
 
@@ -224,53 +208,28 @@ pub async fn update_tweet(pool: &PgPool, tweet: &Value) -> Result<(), sqlx::erro
 /// Criteria:
 /// 1. tweet_class match
 /// 2. ordered by popularity
-/// 3. within 24h or 1wk timeframe - todo
-/// 4. currently missing media? I think that's probably the more important one of the two - todo
-pub async fn find_tweets_to_backfill_by_class(
+/// 3. within 21d timeframe (from my mvp: accounts post ~4 tweets / 24h. I'm fetching 100 tweets = ~25d worth of tweets)  
+/// 4. currently missing media? Thought about it, but I think a tweet without a quote/reply is worse than a tweet without a picture. So for now no.
+pub async fn fetch_tweets_to_backfill_by_class(
     pool: &PgPool,
     tweet_class: &str,
 ) -> Result<Vec<Tweet>, sqlx::error::Error> {
+    let last_21_days = Utc::now() - Duration::days(21);
+
     let tweets = sqlx::query_as!(
         Tweet,
         r#"
-        SELECT * FROM tweets WHERE tweet_class = $1 ORDER BY popularity_count
+        SELECT * FROM tweets 
+        WHERE tweet_class = $1 
+        AND tweet_created_at > $2
+        ORDER BY popularity_count
         "#,
         tweet_class,
+        last_21_days,
     )
     .fetch_all(pool)
     .await?;
-
     Ok(tweets)
-}
-
-pub async fn backfill_rt_original_tweet(
-    pool: &PgPool,
-    body: &Value,
-) -> Result<(), sqlx::error::Error> {
-    // 1 media
-    handle_media_for_tweet(&pool, &body["data"], &body).await?;
-
-    // 2 helper tweets
-    // we first need to save the users
-    let users = &body["includes"]["users"];
-    for user in users.as_array().unwrap() {
-        store_user(&pool, &user).await.unwrap();
-    }
-
-    // only then the actual helper tweets
-    let helper_tweets = body["includes"]["tweets"].as_array();
-    if let Some(helper_ts) = helper_tweets {
-        for ht in helper_ts.iter() {
-            store_tweet(&pool, &ht, &body, "helper").await.unwrap();
-        }
-    }
-
-    Ok(())
-}
-
-pub async fn backfill_helper_tweet(pool: &PgPool, body: &Value) -> Result<(), sqlx::error::Error> {
-    handle_media_for_tweet(&pool, &body["data"], &body).await?;
-    Ok(())
 }
 
 // ----------------------------------------------------------------------------- serve
@@ -298,9 +257,6 @@ pub async fn fetch_next_page_of_tweets(
         form.timeframe.to_string(),
         form.last_tweet_id,
     );
-
-    println!("{}", sql);
-
     let tweets = sqlx::query_as(&sql).fetch_all(pool).await?;
     Ok(tweets)
 }

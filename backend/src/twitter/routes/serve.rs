@@ -1,6 +1,6 @@
 use crate::twitter::domain::media::{fetch_all_media_for_tweet, Media};
 use crate::twitter::domain::tweet::{fetch_next_page_of_tweets, fetch_tweet, Tweet};
-use crate::twitter::domain::user::{fetch_user, fetch_user_by_uuid, User};
+use crate::twitter::domain::user::{fetch_user_by_uuid, User};
 use actix_web::{get, web, HttpResponse, Responder};
 use chrono::Duration;
 use serde::{Deserialize, Serialize};
@@ -35,6 +35,15 @@ pub enum Timeframe {
     Day,
     Week,
     Month,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FullTweet {
+    pub tweet: Tweet,
+    pub author: User,
+    pub media: Option<Vec<Media>>,
+    pub reply_to: Box<Option<FullTweet>>,
+    pub quote_of: Box<Option<FullTweet>>,
 }
 
 // ----------------------------------------------------------------------------- traits
@@ -100,8 +109,7 @@ pub async fn tweets4(form: web::Query<TweetParams>, pool: web::Data<PgPool>) -> 
 
         // tries to add a reply tweet, if present
         if let Some(ref reply_tweet_id) = full_tweet.tweet.replied_to_tweet_id {
-            let reply_tweet = fetch_tweet(pool.as_ref(), reply_tweet_id).await;
-            if let Ok(reply_tweet) = reply_tweet {
+            if let Ok(reply_tweet) = fetch_tweet(pool.as_ref(), reply_tweet_id).await {
                 let reply_full_tweet = prep_full_tweet(pool.as_ref(), reply_tweet).await;
                 full_tweet.reply_to = Box::new(Some(reply_full_tweet));
             }
@@ -109,8 +117,7 @@ pub async fn tweets4(form: web::Query<TweetParams>, pool: web::Data<PgPool>) -> 
 
         // tried to add a quote tweet, if present
         if let Some(ref quote_tweet_id) = full_tweet.tweet.quoted_tweet_id {
-            let quote_tweet = fetch_tweet(pool.as_ref(), quote_tweet_id).await;
-            if let Ok(quote_tweet) = quote_tweet {
+            if let Ok(quote_tweet) = fetch_tweet(pool.as_ref(), quote_tweet_id).await {
                 let quote_full_tweet = prep_full_tweet(pool.as_ref(), quote_tweet).await;
                 full_tweet.quote_of = Box::new(Some(quote_full_tweet));
             }
@@ -126,15 +133,6 @@ pub async fn tweets4(form: web::Query<TweetParams>, pool: web::Data<PgPool>) -> 
     HttpResponse::Ok()
         .content_type("application/json")
         .body(body)
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct FullTweet {
-    pub tweet: Tweet,
-    pub author: User,
-    pub media: Option<Vec<Media>>,
-    pub reply_to: Box<Option<FullTweet>>,
-    pub quote_of: Box<Option<FullTweet>>,
 }
 
 pub async fn prep_full_tweet(pool: &PgPool, tweet: Tweet) -> FullTweet {

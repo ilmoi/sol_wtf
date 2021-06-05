@@ -28,8 +28,6 @@ pub async fn fetch_media(pool: &PgPool, media_key: &str) -> Result<Media, sqlx::
     )
     .fetch_one(pool)
     .await?;
-
-    println!("fetched media with id {}", media_key);
     Ok(res)
 }
 
@@ -47,7 +45,6 @@ pub async fn fetch_all_media_for_tweet(
     )
     .fetch_all(pool)
     .await?;
-
     Ok(res)
 }
 
@@ -65,16 +62,14 @@ pub async fn handle_media_for_tweet(
     body: &Value,
 ) -> Result<(), sqlx::error::Error> {
     // media_keys may not be present for a tweet if has no media content
-    let media_keys = tweet["attachments"]["media_keys"].as_array();
-    if let Some(media_ks) = media_keys {
+    if let Some(media_keys) = tweet["attachments"]["media_keys"].as_array() {
         // media_objects may not be present for the batch if no tweets have any media
-        let media_objects = body["includes"]["media"].as_array();
-        if let Some(media_obj) = media_objects {
-            let final_media_objects = media_ks
+        if let Some(media_objects) = body["includes"]["media"].as_array() {
+            let final_media_objects = media_keys
                 .iter()
                 .map(|mk| {
                     //will be 0 if not found, 1 if found, hence the option
-                    let relevant_objects = media_obj
+                    let relevant_objects = media_objects
                         .iter()
                         .filter(|&mo| mo["media_key"].as_str().unwrap() == mk.as_str().unwrap())
                         .collect::<Vec<&Value>>();
@@ -87,7 +82,6 @@ pub async fn handle_media_for_tweet(
             store_all_media(&pool, tweet_id, final_media_objects).await?;
         }
     }
-
     Ok(())
 }
 
@@ -114,13 +108,11 @@ pub async fn store_all_media(
     tweet_id: &str,
     media_objects: Vec<Value>,
 ) -> Result<(), sqlx::error::Error> {
-    let parent_tweet = fetch_tweet(&pool, tweet_id).await.unwrap();
+    let parent_tweet = fetch_tweet(&pool, tweet_id).await?;
 
     for mo in media_objects.iter() {
-        store_media(&pool, &parent_tweet, mo).await.unwrap();
+        store_media(&pool, &parent_tweet, mo).await?;
     }
-
-    println!("stored all media for user {}", tweet_id);
     Ok(())
 }
 
@@ -133,7 +125,7 @@ pub async fn store_media(
     let media_key = media_object["media_key"].as_str().unwrap();
     let found_media = fetch_media(&pool, media_key).await;
     let display_url = build_display_url(&media_object);
-    if let Ok(_) = found_media {
+    if found_media.is_ok() {
         return update_media(&pool, &media_object, display_url).await;
     }
 
@@ -151,13 +143,7 @@ pub async fn store_media(
         parent_tweet.id,
     )
     .execute(pool)
-    .await
-    .unwrap();
-
-    println!(
-        "stored media with id {}",
-        media_object["media_key"].as_str().unwrap()
-    );
+    .await?;
     Ok(())
 }
 
@@ -179,13 +165,11 @@ pub async fn update_media(
     )
     .execute(pool)
     .await?;
-
     Ok(())
 }
 
 pub fn build_display_url(media_object: &Value) -> Option<&str> {
     let photo_url = media_object["url"].as_str();
     let preview_url = media_object["preview_image_url"].as_str();
-    let display_url = photo_url.or(preview_url);
-    display_url
+    photo_url.or(preview_url)
 }
