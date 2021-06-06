@@ -15,6 +15,7 @@ pub struct TweetParams {
     pub sort_by: SortBy,
     pub timeframe: Timeframe,
     pub last_tweet_id: String,
+    pub last_metric: String,
 }
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
@@ -52,7 +53,7 @@ impl fmt::Display for SortBy {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             SortBy::Popularity => write!(f, "popularity_count"),
-            SortBy::Retweets => write!(f, "combined_retweet_count"),
+            SortBy::Retweets => write!(f, "total_retweet_count"),
             SortBy::Likes => write!(f, "like_count"),
             SortBy::Replies => write!(f, "reply_count"),
             SortBy::Time => write!(f, "tweet_created_at"),

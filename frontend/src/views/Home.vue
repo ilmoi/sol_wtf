@@ -64,7 +64,7 @@
 
       <!--FEED-->
       <div>
-        <div v-for="t in tweets" :id="t.tweet_id">
+        <div v-for="t in tweets" :key="t.tweet.tweet_id">
           <div class="flex justify-center">
             <!--LEFT-->
             <Tweet :tweet_object="t" v-if="shouldShow(t)"/>
@@ -103,7 +103,8 @@ export default {
       // query params
       sort_by: "popularity",
       timeframe: "24h",
-      last_tweet_id: "0",
+      last_tweet_id: "922337", //largest int
+      last_metric: "2036854775807", //postgres supports
       // form
       include: "",
       includeArray: [],
@@ -145,18 +146,22 @@ export default {
     },
   },
   methods: {
-    toTitleCase(str) {
-      return str.toLowerCase().split(' ').map(function (word) {
-        return (word.charAt(0).toUpperCase() + word.slice(1));
-      }).join(' ');
-    },
+    // toTitleCase(str) {
+    //   return str.toLowerCase().split(' ').map(function (word) {
+    //     return (word.charAt(0).toUpperCase() + word.slice(1));
+    //   }).join(' ');
+    // },
     async fetchMoreData($state = null) {
+
+      console.log(this.last_metric)
+
       const {data} = await axios.get("http://127.0.0.1:5001/tweets4",
           {
             params: {
               sort_by: this.sort_by,
               timeframe: this.serializedTimeframe,
               last_tweet_id: this.last_tweet_id,
+              last_metric: this.last_metric,
             }
           }
       )
@@ -165,9 +170,16 @@ export default {
         this.tweets.push(...data)
         this.page += 1
         this.last_tweet_id = data[data.length-1].tweet.tweet_id
+        this.last_metric = data[data.length-1].tweet[this.serializedSortBy]
+
+        // let count = 1
+        // data.forEach(t => {
+        //   console.log(`${count} pushing new tweet: ${t.tweet.tweet_id}`)
+        //   count += 1
+        // })
 
         console.log(`new page is ${this.page}`)
-        console.log(`last tweet is ${this.last_tweet_id}`)
+        console.log(`last metric / tweet id: ${this.last_metric} ${this.last_tweet_id}`)
         console.log(this.tweets)
 
         $state ? $state.loaded() : null
@@ -180,7 +192,8 @@ export default {
     changeType() {
       this.tweets = []
       this.page = 1
-      this.last_tweet_id = "0"
+      this.last_tweet_id = "922337" //largest int
+      this.last_metric = "2036854775807" //postgres supports
       this.infiniteId += 1
     },
     handleInput(filterStr) {

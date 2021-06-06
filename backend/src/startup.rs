@@ -4,7 +4,7 @@ use actix_web::middleware::Logger;
 use actix_web::{http, web, App, HttpServer};
 
 use crate::config::Settings;
-use crate::twitter::routes::pull::{backfill, pull};
+use crate::twitter::routes::pull::{backfill, exhaust, pull};
 use crate::twitter::routes::serve::{hello, tweets4};
 use sqlx::PgPool;
 use std::sync::Arc;
@@ -28,6 +28,7 @@ pub fn run(addr: &str, pg_pool: PgPool, config: Settings) -> Result<Server, std:
             .service(tweets4)
             .service(pull)
             .service(backfill)
+            .service(exhaust)
             .app_data(pool.clone())
             .app_data(arc_config.clone())
     })

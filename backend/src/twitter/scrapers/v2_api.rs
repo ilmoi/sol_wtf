@@ -1,21 +1,43 @@
 use crate::config::Settings;
+use chrono::{DateTime, NaiveDateTime, Utc};
+use reqwest::Response;
 use serde_json::Value;
+use std::fmt;
 
 #[allow(non_snake_case)]
 #[derive(Debug, serde::Serialize)]
 pub struct Params {
-    expansions: String,
-    tweet___fields: String,
-    user___fields: String,
-    media___fields: String,
-    max_results: Option<u32>,
+    pub expansions: String,
+    pub tweet___fields: String,
+    pub user___fields: String,
+    pub media___fields: String,
+    pub max_results: Option<u32>,
+}
+
+#[derive(Debug)]
+pub struct RateLimits {
+    pub limit_left: u32,
+    pub limit_total: u32,
+    pub reset_time: DateTime<Utc>,
+}
+
+impl fmt::Display for RateLimits {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "RATE LIMIT LEFT: {} / {}, RESET TIME: {}",
+            self.limit_left,
+            self.limit_total,
+            self.reset_time.format("%H:%M:%S GMT")
+        )
+    }
 }
 
 pub async fn v2_api_get(
     config: &Settings,
     mut url: String,
     params: Option<&Params>,
-) -> Result<Value, reqwest::Error> {
+) -> Result<(Value, RateLimits), reqwest::Error> {
     let client = reqwest::Client::new();
     let bearer_token = &config.twitter.bearer_token;
 
@@ -32,15 +54,59 @@ pub async fn v2_api_get(
         .send()
         .await?;
 
-    println!("Status: {}", res.status());
+    println!(">>> GET CALL STATUS: {}", res.status());
+    let rate_limits = handle_rate_limits(&res);
     let body: Value = res.json().await?;
     // println!("Body:\n\n{:#?}", &body);
-    Ok(body)
+    // println!("Rate limits:\n\n{:#?}", &rate_limits);
+    Ok((body, rate_limits))
+}
+
+pub fn handle_rate_limits(res: &Response) -> RateLimits {
+    let limit_left = res
+        .headers()
+        .get("x-rate-limit-remaining")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .parse::<u32>()
+        .unwrap();
+    let limit_total = res
+        .headers()
+        .get("x-rate-limit-limit")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .parse::<u32>()
+        .unwrap();
+    let reset_time = res
+        .headers()
+        .get("x-rate-limit-reset")
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .parse::<u32>()
+        .unwrap();
+    let reset_time =
+        DateTime::<Utc>::from_utc(NaiveDateTime::from_timestamp(reset_time.into(), 0), Utc);
+
+    let rate_limits = RateLimits {
+        limit_left,
+        limit_total,
+        reset_time,
+    };
+
+    println!(">>> {}", rate_limits);
+
+    rate_limits
 }
 
 // ----------------------------------------------------------------------------- specific calls
 
-pub async fn get_user_timeline(config: &Settings, user_id: &str) -> Result<Value, reqwest::Error> {
+pub async fn get_user_timeline(
+    config: &Settings,
+    user_id: &str,
+) -> Result<(Value, RateLimits), reqwest::Error> {
     let url = format!("https://api.twitter.com/2/users/{}/tweets", user_id);
     let params = Params {
         expansions: String::from("author_id,referenced_tweets.id,referenced_tweets.id.author_id,in_reply_to_user_id,attachments.media_keys"),
@@ -51,11 +117,13 @@ pub async fn get_user_timeline(config: &Settings, user_id: &str) -> Result<Value
         media___fields: String::from("preview_image_url,url"),
         max_results: Some(100),
     };
-    let body = v2_api_get(&config, url, Some(&params)).await?;
-    Ok(body)
+    v2_api_get(&config, url, Some(&params)).await
 }
 
-pub async fn get_single_tweet(config: &Settings, tweet_id: &str) -> Result<Value, reqwest::Error> {
+pub async fn get_single_tweet(
+    config: &Settings,
+    tweet_id: &str,
+) -> Result<(Value, RateLimits), reqwest::Error> {
     let url = format!("https://api.twitter.com/2/tweets/{}", tweet_id);
     let params = Params {
         expansions: String::from("author_id,referenced_tweets.id,referenced_tweets.id.author_id,in_reply_to_user_id,attachments.media_keys"),
@@ -66,13 +134,13 @@ pub async fn get_single_tweet(config: &Settings, tweet_id: &str) -> Result<Value
         media___fields: String::from("preview_image_url,url"),
         max_results: None,
     };
-    let body = v2_api_get(&config, url, Some(&params)).await?;
-    Ok(body)
+    v2_api_get(&config, url, Some(&params)).await
 }
 
-pub async fn fetch_followed_users(config: &Settings) -> Result<Value, reqwest::Error> {
+pub async fn fetch_followed_users(
+    config: &Settings,
+) -> Result<(Value, RateLimits), reqwest::Error> {
     let soldotwtf = "1397861458441089025";
     let url = format!("https://api.twitter.com/2/users/{}/following", soldotwtf);
-    let body = v2_api_get(&config, url, None).await?;
-    Ok(body)
+    v2_api_get(&config, url, None).await
 }

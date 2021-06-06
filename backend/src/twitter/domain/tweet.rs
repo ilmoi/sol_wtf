@@ -6,7 +6,7 @@ use sqlx::PgPool;
 
 use crate::twitter::domain::media::handle_media_for_tweet;
 use crate::twitter::domain::user::fetch_user;
-use crate::twitter::routes::serve::TweetParams;
+use crate::twitter::routes::serve::{SortBy, TweetParams};
 use actix_web::web;
 use serde::{Deserialize, Serialize};
 
@@ -234,29 +234,76 @@ pub async fn fetch_tweets_to_backfill_by_class(
 
 // ----------------------------------------------------------------------------- serve
 
-/// What it does:
-/// 1. Filters: by chosen timeframe (eg last 24h) + filters out 'helper' tweets
-/// 2. Pages: sorts by tweet_id as secondary metric, then uses tweet_id as cursor to always get the next 20 tweets
-/// 3. Sorts: by passed in metric first, tweet_id second (see 2)
-/// 4. Limits to 20 tweets = page size
+/// Time case is trivial - simply order by creation date.
+/// Dates are long / diverse enough that we're unlikely to have two be exactly the same.
+///
+/// Other, not time based cases:
+///
+/// New metric
+/// - invents a new metric which:
+///     - takes user chosen metric (eg popularity count)
+///     - takes the first 10 numbers from tweet id
+///     - concats the two together into a single string, then casts it to int
+/// - why do it?
+///     - need a unique metric we can use as cursor when fetching tweets in pages (keyset pagination)
+///
+/// Filter:
+/// - ignore helper tweets
+/// - limit to timeframe specified by user (eg last 24h)
+/// - bottom of query cut off: use the newly invented metric above
+/// - top of query cut off: page size (eg 20)
+///
+/// Order:
+/// - use the newly invented metric above
 pub async fn fetch_next_page_of_tweets(
     pool: &PgPool,
     form: &web::Query<TweetParams>,
 ) -> Result<Vec<Tweet>, sqlx::error::Error> {
-    let sql = format!(
-        r#"
-        SELECT * 
-        FROM tweets
-        WHERE tweet_created_at >= '{1}'
-        AND tweet_class != 'helper'
-        AND tweets.tweet_id > '{2}'
-        ORDER BY {0} DESC, tweet_id DESC
-        LIMIT 20;
-        "#,
-        form.sort_by.to_string(),
-        form.timeframe.to_string(),
-        form.last_tweet_id,
-    );
+    let mut sql;
+    if let SortBy::Time = form.sort_by {
+        let mut last_metric = form.last_metric.clone(); //todo .clone() the best way here?
+
+        // on the first call the frontend sends the largest possible integer.
+        // This doesn't work for time, so we swap it out for a unix timestamp 1 hour in the future.
+        if form.last_metric == "2036854775807" {
+            last_metric = (Utc::now() + Duration::hours(1)).to_rfc3339().to_owned()
+        }
+
+        sql = format!(
+            r#"
+            SELECT * 
+            FROM tweets
+            WHERE 
+                tweet_class != 'helper'
+                AND tweet_created_at >= '{0}'
+                AND tweet_created_at < '{1}'
+            ORDER BY tweet_created_at DESC
+            LIMIT 20;
+            "#,
+            form.timeframe.to_string(),
+            last_metric,
+        );
+    } else {
+        sql = format!(
+            r#"
+            SELECT * 
+            FROM tweets
+            WHERE 
+                tweet_class != 'helper'
+                AND tweet_created_at >= '{1}'
+                AND CAST(CONCAT(CAST({0} AS VARCHAR), LEFT(tweet_id, 10)) AS BIGINT) < 
+                    CAST(CONCAT(CAST('{3}' AS VARCHAR), LEFT('{2}', 10)) AS BIGINT)
+            ORDER BY 
+                CAST(CONCAT(CAST({0} AS VARCHAR), LEFT(tweet_id, 10)) AS BIGINT) DESC 
+            LIMIT 20;
+            "#,
+            form.sort_by.to_string(),
+            form.timeframe.to_string(),
+            form.last_tweet_id,
+            form.last_metric,
+        );
+    }
+
     let tweets = sqlx::query_as(&sql).fetch_all(pool).await?;
     Ok(tweets)
 }
