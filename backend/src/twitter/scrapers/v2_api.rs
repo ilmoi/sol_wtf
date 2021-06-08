@@ -7,11 +7,12 @@ use std::fmt;
 #[allow(non_snake_case)]
 #[derive(Debug, serde::Serialize)]
 pub struct Params {
-    pub expansions: String,
-    pub tweet___fields: String,
-    pub user___fields: String,
-    pub media___fields: String,
+    pub expansions: Option<String>,
+    pub tweet___fields: Option<String>,
+    pub user___fields: Option<String>,
+    pub media___fields: Option<String>,
     pub max_results: Option<u32>,
+    pub pagination_token: Option<String>,
 }
 
 #[derive(Debug)]
@@ -109,13 +110,14 @@ pub async fn get_user_timeline(
 ) -> Result<(Value, RateLimits), reqwest::Error> {
     let url = format!("https://api.twitter.com/2/users/{}/tweets", user_id);
     let params = Params {
-        expansions: String::from("author_id,referenced_tweets.id,referenced_tweets.id.author_id,in_reply_to_user_id,attachments.media_keys"),
-        tweet___fields: String::from(
+        expansions: Some(String::from("author_id,referenced_tweets.id,referenced_tweets.id.author_id,in_reply_to_user_id,attachments.media_keys")),
+        tweet___fields: Some(String::from(
             "created_at,in_reply_to_user_id,public_metrics,referenced_tweets",
-        ),
-        user___fields: String::from("name,username,profile_image_url,url,public_metrics"),
-        media___fields: String::from("preview_image_url,url"),
+        )),
+        user___fields: Some(String::from("name,username,profile_image_url,url,public_metrics")),
+        media___fields: Some(String::from("preview_image_url,url")),
         max_results: Some(100),
+        pagination_token: None,
     };
     v2_api_get(&config, url, Some(&params)).await
 }
@@ -126,21 +128,57 @@ pub async fn get_single_tweet(
 ) -> Result<(Value, RateLimits), reqwest::Error> {
     let url = format!("https://api.twitter.com/2/tweets/{}", tweet_id);
     let params = Params {
-        expansions: String::from("author_id,referenced_tweets.id,referenced_tweets.id.author_id,in_reply_to_user_id,attachments.media_keys"),
-        tweet___fields: String::from(
+        expansions: Some(String::from("author_id,referenced_tweets.id,referenced_tweets.id.author_id,in_reply_to_user_id,attachments.media_keys")),
+        tweet___fields: Some(String::from(
             "created_at,in_reply_to_user_id,public_metrics,referenced_tweets",
-        ),
-        user___fields: String::from("name,username,profile_image_url,url,public_metrics"),
-        media___fields: String::from("preview_image_url,url"),
+        )),
+        user___fields: Some(String::from("name,username,profile_image_url,url,public_metrics")),
+        media___fields: Some(String::from("preview_image_url,url")),
         max_results: None,
+        pagination_token: None,
     };
     v2_api_get(&config, url, Some(&params)).await
 }
 
 pub async fn fetch_followed_users(
     config: &Settings,
+    pagination_token: Option<String>,
 ) -> Result<(Value, RateLimits), reqwest::Error> {
     let soldotwtf = "1397861458441089025";
     let url = format!("https://api.twitter.com/2/users/{}/following", soldotwtf);
-    v2_api_get(&config, url, None).await
+    let params = Params {
+        expansions: None,
+        tweet___fields: None,
+        user___fields: None,
+        media___fields: None,
+        max_results: Some(1000),
+        pagination_token,
+    };
+    v2_api_get(&config, url, Some(&params)).await
+}
+
+pub async fn fetch_all_followed_users(
+    config: &Settings,
+) -> Result<(Vec<Value>, RateLimits), reqwest::Error> {
+    let mut users: Vec<Value> = vec![];
+    let mut rate_limits;
+    let mut page_token: Option<String> = None;
+
+    loop {
+        let (mut new_users, new_rate_limits) = fetch_followed_users(&config, page_token.clone())
+            .await
+            .unwrap();
+        let mut new_users_vec = new_users["data"].as_array_mut().unwrap();
+
+        // taken from https://stackoverflow.com/questions/40792801/best-way-to-concatenate-vectors-in-rust#40795247
+        users.append(&mut new_users_vec);
+        rate_limits = new_rate_limits;
+
+        match new_users["meta"]["next_token"].as_str() {
+            Some(next_token) => page_token = Some(next_token.into()),
+            None => break,
+        }
+    }
+
+    Ok((users, rate_limits))
 }

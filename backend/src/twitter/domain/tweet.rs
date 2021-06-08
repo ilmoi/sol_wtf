@@ -208,13 +208,15 @@ pub async fn update_tweet(pool: &PgPool, tweet: &Value) -> Result<(), sqlx::erro
 /// Criteria:
 /// 1. tweet_class match
 /// 2. ordered by popularity
-/// 3. within 21d timeframe (from my mvp: accounts post ~4 tweets / 24h. I'm fetching 100 tweets = ~25d worth of tweets)  
+/// 3. within 24h. My calc:
+///     - getting 500 tweets to backfill per 13k in the db
+///     - this suggests that when I have 150k, I would have to backfill 6000 - which is already way above 900 limit
 /// 4. currently missing media? Thought about it, but I think a tweet without a quote/reply is worse than a tweet without a picture. So for now no.
 pub async fn fetch_tweets_to_backfill_by_class(
     pool: &PgPool,
     tweet_class: &str,
 ) -> Result<Vec<Tweet>, sqlx::error::Error> {
-    let last_21_days = Utc::now() - Duration::days(21);
+    let last_24h = Utc::now() - Duration::days(1);
 
     let tweets = sqlx::query_as!(
         Tweet,
@@ -225,7 +227,7 @@ pub async fn fetch_tweets_to_backfill_by_class(
         ORDER BY popularity_count
         "#,
         tweet_class,
-        last_21_days,
+        last_24h,
     )
     .fetch_all(pool)
     .await?;
@@ -246,6 +248,7 @@ pub async fn fetch_tweets_to_backfill_by_class(
 ///     - concats the two together into a single string, then casts it to int
 /// - why do it?
 ///     - need a unique metric we can use as cursor when fetching tweets in pages (keyset pagination)
+/// - (!) THE COLUMN IS INDEXED FOR FASTER QUERIES
 ///
 /// Filter:
 /// - ignore helper tweets
@@ -259,7 +262,7 @@ pub async fn fetch_next_page_of_tweets(
     pool: &PgPool,
     form: &web::Query<TweetParams>,
 ) -> Result<Vec<Tweet>, sqlx::error::Error> {
-    let mut sql;
+    let sql;
     if let SortBy::Time = form.sort_by {
         let mut last_metric = form.last_metric.clone(); //todo .clone() the best way here?
 
@@ -291,10 +294,10 @@ pub async fn fetch_next_page_of_tweets(
             WHERE 
                 tweet_class != 'helper'
                 AND tweet_created_at >= '{1}'
-                AND CAST(CONCAT(CAST({0} AS VARCHAR), LEFT(tweet_id, 10)) AS BIGINT) < 
-                    CAST(CONCAT(CAST('{3}' AS VARCHAR), LEFT('{2}', 10)) AS BIGINT)
+                AND CAST({0} || LEFT(tweet_id, 10) AS BIGINT) < 
+                    CAST('{3}' || LEFT('{2}', 10) AS BIGINT)
             ORDER BY 
-                CAST(CONCAT(CAST({0} AS VARCHAR), LEFT(tweet_id, 10)) AS BIGINT) DESC 
+                CAST({0} || LEFT(tweet_id, 10) AS BIGINT) DESC 
             LIMIT 20;
             "#,
             form.sort_by.to_string(),

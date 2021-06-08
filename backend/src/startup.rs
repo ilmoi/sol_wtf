@@ -1,13 +1,14 @@
+use std::sync::Arc;
+
 use actix_cors::Cors;
 use actix_web::dev::Server;
 use actix_web::middleware::Logger;
 use actix_web::{http, web, App, HttpServer};
+use sqlx::PgPool;
 
 use crate::config::Settings;
-use crate::twitter::routes::pull::{backfill, exhaust, pull};
+use crate::twitter::routes::pull::{backfill, pull};
 use crate::twitter::routes::serve::{hello, tweets4};
-use sqlx::PgPool;
-use std::sync::Arc;
 
 pub fn run(addr: &str, pg_pool: PgPool, config: Settings) -> Result<Server, std::io::Error> {
     let pool = web::Data::new(pg_pool); //important - else get https://stackoverflow.com/questions/56117273/actix-web-reports-app-data-is-not-configured-when-processing-a-file-upload
@@ -28,7 +29,6 @@ pub fn run(addr: &str, pg_pool: PgPool, config: Settings) -> Result<Server, std:
             .service(tweets4)
             .service(pull)
             .service(backfill)
-            .service(exhaust)
             .app_data(pool.clone())
             .app_data(arc_config.clone())
     })

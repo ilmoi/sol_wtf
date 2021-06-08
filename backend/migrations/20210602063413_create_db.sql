@@ -88,4 +88,24 @@ CREATE TABLE media
     tweet_id    uuid        NOT NULL,
     FOREIGN KEY (tweet_id)
         REFERENCES tweets (id)
-)
+);
+
+CREATE INDEX tweet_created_at_index ON tweets (tweet_created_at);
+
+CREATE INDEX popularity_count_index ON tweets (popularity_count);
+CREATE INDEX popularity_count_special_index ON tweets (CAST(popularity_count || LEFT(tweet_id, 10) AS BIGINT));
+
+CREATE INDEX like_count_index ON tweets (like_count);
+CREATE INDEX like_count_special_index ON tweets (CAST(like_count || LEFT(tweet_id, 10) AS BIGINT));
+
+CREATE INDEX quote_count_index ON tweets (quote_count);
+CREATE INDEX quote_count_special_index ON tweets (CAST(quote_count || LEFT(tweet_id, 10) AS BIGINT));
+
+CREATE INDEX reply_count_index ON tweets (reply_count);
+CREATE INDEX reply_count_special_index ON tweets (CAST(reply_count || LEFT(tweet_id, 10) AS BIGINT));
+
+CREATE INDEX retweet_count_index ON tweets (retweet_count);
+CREATE INDEX retweet_count_special_index ON tweets (CAST(retweet_count || LEFT(tweet_id, 10) AS BIGINT));
+
+CREATE INDEX total_retweet_count_index ON tweets (total_retweet_count);
+CREATE INDEX total_retweet_count_special_index ON tweets (CAST(total_retweet_count || LEFT(tweet_id, 10) AS BIGINT));
