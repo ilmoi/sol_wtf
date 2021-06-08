@@ -17,7 +17,6 @@ pub struct User {
     pub following_count: Option<i64>,
     pub listed_count: Option<i64>,
     pub tweet_count: Option<i64>,
-    pub entire_user: Option<Value>,
 }
 
 // ----------------------------------------------------------------------------- fn

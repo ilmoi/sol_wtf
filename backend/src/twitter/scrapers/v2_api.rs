@@ -116,7 +116,7 @@ pub async fn get_user_timeline(
         )),
         user___fields: Some(String::from("name,username,profile_image_url,url,public_metrics")),
         media___fields: Some(String::from("preview_image_url,url")),
-        max_results: Some(100),
+        max_results: Some(100), //in theory the right approach would be to pull tweets posted in last 7d, but if I can pull 100 why not pull 100
         pagination_token: None,
     };
     v2_api_get(&config, url, Some(&params)).await

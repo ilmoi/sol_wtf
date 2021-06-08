@@ -29,7 +29,6 @@ pub struct Tweet {
     pub retweet_count: Option<i64>,
     pub total_retweet_count: Option<i64>,
     pub popularity_count: Option<i64>,
-    pub entire_tweet: Option<Value>,
     pub user_id: Uuid,
 }
 
@@ -132,6 +131,16 @@ pub async fn store_tweet(
     // handle metrics
     let tweet_metrics = extract_tweet_metrics(&tweet);
 
+    // fix tweet text
+    let tweet_text = tweet["text"]
+        .as_str()
+        .unwrap()
+        .replace("&quot;", "\"")
+        .replace("&apos;", "'")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&amp;", "&");
+
     // store the actual tweet
     sqlx::query!(
         r#"
@@ -157,7 +166,7 @@ pub async fn store_tweet(
         Utc::now(),
         tweet_id,
         tweet_created_at,
-        tweet["text"].as_str(),
+        tweet_text,
         tweet_url,
         // reference tweets
         replied_to_tweet_id,
@@ -182,32 +191,77 @@ pub async fn store_tweet(
 
 // ----------------------------------------------------------------------------- backfill
 
-/// Criteria:
-/// 1. tweet_class match
-/// 2. ordered by popularity
-/// 3. within 24h. My calc:
-///     - getting 500 tweets to backfill per 13k in the db
-///     - this suggests that when I have 150k, I would have to backfill 6000 - which is already way above 900 limit
-/// 4. currently missing media? Thought about it, but I think a tweet without a quote/reply is worse than a tweet without a picture. So for now no.
-pub async fn fetch_tweets_to_backfill_by_class(
+/// core = rt_oritinal + normal
+pub async fn fetch_core_tweets_to_backfill(
     pool: &PgPool,
-    tweet_class: &str,
+    days_back: i64,
 ) -> Result<Vec<Tweet>, sqlx::error::Error> {
-    let last_24h = Utc::now() - Duration::days(1);
-
-    let tweets = sqlx::query_as!(
-        Tweet,
+    let timeframe = Utc::now() - Duration::days(days_back);
+    let sql = format!(
         r#"
-        SELECT * FROM tweets 
-        WHERE tweet_class = $1 
-        AND tweet_created_at > $2
-        ORDER BY popularity_count
+        WITH prefiltered_tweets AS (
+            SELECT * 
+            FROM tweets 
+            WHERE 
+                tweet_class IN ('normal', 'rt_oritinal') 
+                AND tweet_created_at > '{}'
+            ORDER BY popularity_count
+        )
+        
+        -- tweets missing a quote tweet
+        SELECT * 
+        FROM prefiltered_tweets 
+        WHERE 
+            quoted_tweet_id IS NOT NULL
+            AND quoted_tweet_id NOT IN (SELECT tweet_id FROM tweets)
+        
+        UNION
+        
+        -- tweets missing a reply tweet
+        SELECT * 
+        FROM prefiltered_tweets 
+        WHERE 
+            replied_to_tweet_id IS NOT NULL
+            AND replied_to_tweet_id NOT IN (SELECT tweet_id FROM tweets)
+        
+        UNION
+        
+        -- tweets missing media
+        SELECT prefiltered_tweets.* 
+        FROM prefiltered_tweets 
+        JOIN media ON prefiltered_tweets.id = media.tweet_id
+        WHERE media.display_url IS NULL;
         "#,
-        tweet_class,
-        last_24h,
-    )
-    .fetch_all(pool)
-    .await?;
+        timeframe.to_rfc3339(),
+    );
+    let tweets = sqlx::query_as(&sql).fetch_all(pool).await?;
+    Ok(tweets)
+}
+
+pub async fn fetch_helper_tweets_to_backfill(
+    pool: &PgPool,
+    days_back: i64,
+) -> Result<Vec<Tweet>, sqlx::error::Error> {
+    let timeframe = Utc::now() - Duration::days(days_back);
+    let sql = format!(
+        r#"
+        WITH prefiltered_tweets AS (
+            SELECT * 
+            FROM tweets 
+            WHERE 
+                tweet_class = 'helper' 
+                AND tweet_created_at > '{}'
+            ORDER BY popularity_count
+        )
+        
+        SELECT prefiltered_tweets.* 
+        FROM prefiltered_tweets 
+        JOIN media ON prefiltered_tweets.id = media.tweet_id
+        WHERE media.display_url IS NULL;
+        "#,
+        timeframe.to_rfc3339(),
+    );
+    let tweets = sqlx::query_as(&sql).fetch_all(pool).await?;
     Ok(tweets)
 }
 
@@ -241,7 +295,7 @@ pub async fn fetch_next_page_of_tweets(
 ) -> Result<Vec<Tweet>, sqlx::error::Error> {
     let sql;
     if let SortBy::Time = form.sort_by {
-        let mut last_metric = form.last_metric.clone(); //todo .clone() the best way here?
+        let mut last_metric = form.last_metric.clone();
 
         // on the first call the frontend sends the largest possible integer.
         // This doesn't work for time, so we swap it out for a unix timestamp 1 hour in the future.
@@ -283,7 +337,6 @@ pub async fn fetch_next_page_of_tweets(
             form.last_metric,
         );
     }
-
     let tweets = sqlx::query_as(&sql).fetch_all(pool).await?;
     Ok(tweets)
 }

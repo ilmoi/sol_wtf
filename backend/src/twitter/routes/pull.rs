@@ -9,7 +9,9 @@ use sqlx::PgPool;
 
 use crate::config::Settings;
 use crate::twitter::domain::media::handle_media_for_tweet;
-use crate::twitter::domain::tweet::{fetch_tweets_to_backfill_by_class, store_tweet, Tweet};
+use crate::twitter::domain::tweet::{
+    fetch_core_tweets_to_backfill, fetch_helper_tweets_to_backfill, store_tweet, Tweet,
+};
 use crate::twitter::domain::user::store_user;
 use crate::twitter::scrapers::v2_api::{
     fetch_all_followed_users, get_single_tweet, get_user_timeline,
@@ -28,42 +30,49 @@ pub async fn pull(pool: web::Data<PgPool>, config: web::Data<Arc<Settings>>) -> 
     HttpResponse::Ok()
 }
 
+/// Algo:
+/// 1) take rt_originals in the last 24h ordered by popularity = the ones most likely to appear at the top of the feed
+///     1.1) backfill media + helper tweets for them
+/// 2) take helper tweets in the last 24h ordered by popularity
+///     2.1) backfill media for them
+///
+/// Capacity calc:
+/// - Twitter gives me 900 calls / 15min
+/// - With 130 people followed and 13k tweets pulled, I have to backfill around 600 tweets for 7d / 85 for 1d.
+/// - With 1500 people followed and 150k tweets pulled, this becomes 6900 for 7d and 977.5 for 24h.
+/// - BUT: since we never have to backfill a tweet twice, and we'll be calling this func every 15min, the amount will go down over time.
+/// - In other words it should be safe to set days_back to 7.
 #[get("/backfill")]
 pub async fn backfill(pool: web::Data<PgPool>, config: web::Data<Arc<Settings>>) -> impl Responder {
     let config = config.as_ref().deref();
 
-    // 1) process rt_original tweets (download media + helpers)
-    let rt_originals = fetch_tweets_to_backfill_by_class(pool.as_ref(), "rt_original")
+    // 1) process core (normal + rt_orinals) tweets (download media + helpers)
+    let core = fetch_core_tweets_to_backfill(pool.as_ref(), 7)
         .await
         .unwrap();
-
+    // sometimes a tweet will be deleted (eg 1401933150012559361) - and we keep trying to backfill it. In theory should handle - but for now I'll just let it drop out of timeframe.
     loop_until_hit_rate_limit(
-        &rt_originals,
+        &core,
         config,
         pool.as_ref(),
         process_rt_original_tweet,
-        900, //todo in theory can ask twitter for remaining but for now good enough
+        900, //in theory can ask twitter for remaining
     )
     .await;
 
-    // 2) process helper tweets (download media only)
-    let helpers = fetch_tweets_to_backfill_by_class(pool.as_ref(), "helper")
+    // 3) process helper tweets (download media only)
+    let helpers = fetch_helper_tweets_to_backfill(pool.as_ref(), 7)
         .await
         .unwrap();
     loop_until_hit_rate_limit(&helpers, config, pool.as_ref(), process_helper_tweet, 900).await;
 
-    println!(
-        "Total: {} rt_originals and {} helpers",
-        rt_originals.len(),
-        helpers.len()
-    );
+    println!("Total: {} core and {} helpers", core.len(), helpers.len(),);
 
     HttpResponse::Ok()
 }
 
 // ----------------------------------------------------------------------------- helpers
 
-// todo https://stackoverflow.com/questions/67876855/handling-duplicate-inserts-into-database-in-async-rust
 pub async fn loop_until_hit_rate_limit<'a, T, Fut>(
     object_arr: &'a [T],
     settings: &'a Settings,
@@ -75,9 +84,8 @@ pub async fn loop_until_hit_rate_limit<'a, T, Fut>(
 {
     // this is the easiest way to impl. rate limits.
     // A much harder approach would be to wrap one in Arc(Mutex()) and update from each async task.
-    // todo currently not retrying the ones that run over the limit
     let total = object_arr.len();
-    let capped_total = min(total, rate_limit);
+    let capped_total = min(total, rate_limit); // in theory should handle the ones that didn't fit in, but for now cba
 
     let mut futs = vec![];
     for (i, object) in object_arr[..capped_total].iter().enumerate() {

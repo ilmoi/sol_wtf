@@ -28,7 +28,7 @@
             <option>4h</option>
             <option>24h</option>
             <option>1 week</option>
-            <option>1 month</option>
+            <!--<option>1 month</option> (!)FOR NOW REMOVING-->
           </select>
         </div>
 
@@ -45,18 +45,34 @@
 
           <p class="mt-2">include posts from:</p>
           <div>
+            <input type="checkbox" id="solana" v-model="solana" class="checkbox">
+            <label for="solana">solana core team</label>
+          </div>
+
+          <div>
+            <input type="checkbox" id="projects" v-model="projects" class="checkbox">
+            <label for="projects">projects</label>
+          </div>
+
+          <div>
             <input type="checkbox" id="traders" v-model="traders" class="checkbox">
             <label for="traders">traders</label>
           </div>
 
           <div>
-            <input type="checkbox" id="builders" v-model="builders" class="checkbox">
-            <label for="builders">builders</label>
+            <input type="checkbox" id="hackers" v-model="hackers" class="checkbox">
+            <label for="hackers">hackers</label>
           </div>
 
           <div>
             <input type="checkbox" id="news" v-model="news" class="checkbox">
-            <label for="news">news</label>
+            <label for="news">news outlets</label>
+          </div>
+
+
+          <div class="mt-4">
+            <input type="checkbox" id="remember" v-model="remember" class="checkbox">
+            <label for="remember">Remember my choices</label>
           </div>
 
         </HiddenDetails>
@@ -69,11 +85,8 @@
             <!--LEFT-->
             <Tweet :tweet_object="t" v-if="shouldShow(t)"/>
 
-            <!--todo in the end compare the two again to make sure you're not missing anything-->
             <!--RIGHT-->
-            <!--<Tweet :id="t.tweet_id" class="tweet"">-->
-            <!--  <pulse-loader></pulse-loader>-->
-            <!--</Tweet>-->
+            <!--<TweedEmbed :id="t.tweet.tweet_id" class="tweet-embed">loading...</TweedEmbed>-->
           </div>
         </div>
       </div>
@@ -88,11 +101,13 @@
 import axios from "axios";
 import Tweet from "@/components/Tweet"
 import HiddenDetails from "@/components/HiddenDetails";
+import {Tweet as TweedEmbed} from 'vue-tweet-embed';
 
 export default {
   components: {
     HiddenDetails,
     Tweet,
+    TweedEmbed,
   },
   data() {
     return {
@@ -110,9 +125,12 @@ export default {
       includeArray: [],
       exclude: "",
       excludeArray: [],
+      solana: true,
+      projects: true,
       traders: true,
-      builders: true,
+      hackers: true,
       news: true,
+      remember: false,
     }
   },
   computed: {
@@ -152,9 +170,6 @@ export default {
     //   }).join(' ');
     // },
     async fetchMoreData($state = null) {
-
-      console.log(this.last_metric)
-
       const {data} = await axios.get("http://127.0.0.1:5001/tweets4",
           {
             params: {
@@ -262,5 +277,9 @@ p {
 
 .checkbox {
   @apply checked:bg-red-500 mr-1 checked:border-black;
+}
+
+.tweet-embed {
+  width: 550px;
 }
 </style>

@@ -29,11 +29,7 @@ CREATE TABLE users
     followers_count BIGINT DEFAULT 0,
     following_count BIGINT DEFAULT 0,
     listed_count    BIGINT DEFAULT 0,
-    tweet_count     BIGINT DEFAULT 0,
-
-    -- v1 backup
-    entire_user     json
-
+    tweet_count     BIGINT DEFAULT 0
 );
 
 CREATE TABLE tweets
@@ -61,9 +57,6 @@ CREATE TABLE tweets
     retweet_count       BIGINT DEFAULT 0,
     total_retweet_count BIGINT DEFAULT 0,
     popularity_count    BIGINT DEFAULT 0,
-
-    -- v1 backup
-    entire_tweet        json,
 
     -- relation to users
     user_id             uuid        NOT NULL,
