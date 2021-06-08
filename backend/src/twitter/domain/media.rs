@@ -121,47 +121,25 @@ pub async fn store_media(
     parent_tweet: &Tweet,
     media_object: &Value,
 ) -> Result<(), sqlx::error::Error> {
-    // check if media already exists - if so, update it
-    let media_key = media_object["media_key"].as_str().unwrap();
-    let found_media = fetch_media(&pool, media_key).await;
     let display_url = build_display_url(&media_object);
-    if found_media.is_ok() {
-        return update_media(&pool, &media_object, display_url).await;
-    }
-
     sqlx::query!(
         r#"
-            INSERT INTO media
+        INSERT INTO media
             (id, created_at, media_key, media_type, display_url, tweet_id)
-            VALUES ($1, $2, $3, $4, $5, $6) 
-            "#,
+        VALUES 
+            ($1, $2, $3, $4, $5, $6)
+            
+        ON CONFLICT (media_key)
+        DO UPDATE SET
+            media_type = $4,
+            display_url = $5;
+        "#,
         Uuid::new_v4(),
         Utc::now(),
-        media_key,
+        media_object["media_key"].as_str(),
         media_object["type"].as_str(),
         display_url,
         parent_tweet.id,
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
-}
-
-pub async fn update_media(
-    pool: &PgPool,
-    media_object: &Value,
-    display_url: Option<&str>,
-) -> Result<(), sqlx::error::Error> {
-    sqlx::query!(
-        r#"
-        UPDATE media SET
-        media_type = $1,
-        display_url = $2
-        WHERE media_key = $3
-        "#,
-        media_object["media_type"].as_str(),
-        display_url,
-        media_object["media_key"].as_str(),
     )
     .execute(pool)
     .await?;

@@ -49,61 +49,37 @@ pub async fn fetch_user_by_uuid(pool: &PgPool, id: Uuid) -> Result<User, sqlx::e
 }
 
 pub async fn store_user(pool: &PgPool, user: &Value) -> Result<(), sqlx::error::Error> {
-    // check if user already exists - if so, update it
-    let user_id = user["id"].as_str().unwrap();
-    let found_user = fetch_user(&pool, user_id).await;
-    if found_user.is_ok() {
-        return update_user(&pool, &user).await;
-    }
-
     sqlx::query!(
         r#"
         INSERT INTO users
-        (id, created_at, 
-        twitter_user_id, twitter_name, twitter_handle, profile_url, profile_image, 
-        followers_count, following_count, listed_count, tweet_count)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) 
+            (id, created_at, 
+            twitter_user_id, twitter_name, twitter_handle, profile_url, profile_image, 
+            followers_count, following_count, listed_count, tweet_count)
+        VALUES 
+            ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        
+        ON CONFLICT (twitter_user_id)
+        DO UPDATE SET 
+            twitter_name = $4, 
+            twitter_handle = $5,
+            profile_url = $6,
+            profile_image = $7,
+            followers_count = $8,
+            following_count = $9,
+            listed_count = $10,
+            tweet_count = $11;
         "#,
         Uuid::new_v4(),
         Utc::now(),
-        user_id,
-        user["name"].as_str(),
-        user["username"].as_str(),
-        user["url"].as_str(),
-        user["profile_image_url"].as_str(),
-        user["public_metrics"]["followers_count"].as_i64(),
-        user["public_metrics"]["following_count"].as_i64(),
-        user["public_metrics"]["listed_count"].as_i64(),
-        user["public_metrics"]["tweet_count"].as_i64(),
-    )
-    .execute(pool)
-    .await?;
-    Ok(())
-}
-
-pub async fn update_user(pool: &PgPool, user: &Value) -> Result<(), sqlx::error::Error> {
-    sqlx::query!(
-        r#"
-        UPDATE users SET 
-        twitter_name = $1, 
-        twitter_handle = $2, 
-        profile_url = $3, 
-        profile_image = $4, 
-        followers_count = $5, 
-        following_count = $6, 
-        listed_count = $7, 
-        tweet_count = $8
-        WHERE twitter_user_id = $9
-        "#,
-        user["name"].as_str(),
-        user["username"].as_str(),
-        user["url"].as_str(),
-        user["profile_image_url"].as_str(),
-        user["public_metrics"]["followers_count"].as_i64(),
-        user["public_metrics"]["following_count"].as_i64(),
-        user["public_metrics"]["listed_count"].as_i64(),
-        user["public_metrics"]["tweet_count"].as_i64(),
         user["id"].as_str(),
+        user["name"].as_str(),
+        user["username"].as_str(),
+        user["url"].as_str(),
+        user["profile_image_url"].as_str(),
+        user["public_metrics"]["followers_count"].as_i64(),
+        user["public_metrics"]["following_count"].as_i64(),
+        user["public_metrics"]["listed_count"].as_i64(),
+        user["public_metrics"]["tweet_count"].as_i64(),
     )
     .execute(pool)
     .await?;
