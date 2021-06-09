@@ -21,6 +21,7 @@ pub struct User {
 
 // ----------------------------------------------------------------------------- fn
 
+#[tracing::instrument(skip(pool))]
 pub async fn fetch_user(pool: &PgPool, user_id: &str) -> Result<User, sqlx::error::Error> {
     let res = sqlx::query_as!(
         User,
@@ -34,6 +35,7 @@ pub async fn fetch_user(pool: &PgPool, user_id: &str) -> Result<User, sqlx::erro
     Ok(res)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn fetch_user_by_uuid(pool: &PgPool, id: Uuid) -> Result<User, sqlx::error::Error> {
     let res = sqlx::query_as!(
         User,
@@ -47,6 +49,7 @@ pub async fn fetch_user_by_uuid(pool: &PgPool, id: Uuid) -> Result<User, sqlx::e
     Ok(res)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn store_user(pool: &PgPool, user: &Value) -> Result<(), sqlx::error::Error> {
     sqlx::query!(
         r#"

@@ -18,6 +18,7 @@ pub struct Media {
 
 // ----------------------------------------------------------------------------- fn
 
+#[tracing::instrument(skip(pool))]
 pub async fn fetch_media(pool: &PgPool, media_key: &str) -> Result<Media, sqlx::error::Error> {
     let res = sqlx::query_as!(
         Media,
@@ -32,6 +33,7 @@ pub async fn fetch_media(pool: &PgPool, media_key: &str) -> Result<Media, sqlx::
 }
 
 /// returns an empty vector if a tweet has no media
+#[tracing::instrument(skip(pool))]
 pub async fn fetch_all_media_for_tweet(
     pool: &PgPool,
     tweet_id: Uuid,
@@ -56,6 +58,7 @@ pub async fn fetch_all_media_for_tweet(
 /// Model clarification: 2 cases are possible:
 ///     1) for "normal" tweets - media objects will be available if media_keys are
 ///     2) for "rt_original" tweets - only keys will be present. So we store just the keys and will fetch objects later.
+#[tracing::instrument(skip(pool))]
 pub async fn handle_media_for_tweet(
     pool: &PgPool,
     tweet: &Value,
@@ -85,6 +88,7 @@ pub async fn handle_media_for_tweet(
     Ok(())
 }
 
+#[tracing::instrument]
 pub fn prep_final_media_obj(relevant_object: Option<&&Value>, mk: &Value) -> Value {
     match relevant_object {
         Some(relevant_obj) => {
@@ -103,6 +107,7 @@ pub fn prep_final_media_obj(relevant_object: Option<&&Value>, mk: &Value) -> Val
     }
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn store_all_media(
     pool: &PgPool,
     tweet_id: &str,
@@ -116,6 +121,7 @@ pub async fn store_all_media(
     Ok(())
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn store_media(
     pool: &PgPool,
     parent_tweet: &Tweet,

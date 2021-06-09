@@ -91,12 +91,14 @@ impl fmt::Display for Timeframe {
 
 // ----------------------------------------------------------------------------- fns
 
+#[tracing::instrument]
 #[get("/hello")]
 pub async fn hello() -> impl Responder {
     HttpResponse::Ok().body("hey there!")
 }
 
 // http://localhost:5001/tweets4?last_tweet_id=0&sort_by=popularity&timeframe=week
+#[tracing::instrument(skip(pool))]
 #[get("/tweets4")]
 pub async fn tweets4(form: web::Query<TweetParams>, pool: web::Data<PgPool>) -> impl Responder {
     let tweets = fetch_next_page_of_tweets(pool.as_ref(), &form)
@@ -128,14 +130,12 @@ pub async fn tweets4(form: web::Query<TweetParams>, pool: web::Data<PgPool>) -> 
     }
 
     let body = serde_json::to_string(&full_tweets).unwrap();
-
-    // println!("returned body is {}", body);
-
     HttpResponse::Ok()
         .content_type("application/json")
         .body(body)
 }
 
+#[tracing::instrument(skip(pool))]
 pub async fn prep_full_tweet(pool: &PgPool, tweet: Tweet) -> FullTweet {
     let author = fetch_user_by_uuid(&pool, tweet.user_id).await.unwrap();
     let media = fetch_all_media_for_tweet(&pool, tweet.id).await.unwrap();

@@ -2,14 +2,15 @@ use std::sync::Arc;
 
 use actix_cors::Cors;
 use actix_web::dev::Server;
-use actix_web::middleware::Logger;
 use actix_web::{http, web, App, HttpServer};
 use sqlx::PgPool;
+use tracing_actix_web::TracingLogger;
 
 use crate::config::Settings;
 use crate::twitter::routes::pull::{backfill, pull};
 use crate::twitter::routes::serve::{hello, tweets4};
 
+#[tracing::instrument(skip(pg_pool, config))]
 pub fn run(addr: &str, pg_pool: PgPool, config: Settings) -> Result<Server, std::io::Error> {
     let pool = web::Data::new(pg_pool); //important - else get https://stackoverflow.com/questions/56117273/actix-web-reports-app-data-is-not-configured-when-processing-a-file-upload
     let arc_config = web::Data::new(Arc::new(config));
@@ -24,7 +25,7 @@ pub fn run(addr: &str, pg_pool: PgPool, config: Settings) -> Result<Server, std:
 
         App::new()
             .wrap(cors)
-            .wrap(Logger::default())
+            .wrap(TracingLogger::default()) //add request_id to actix events
             .service(hello)
             .service(tweets4)
             .service(pull)

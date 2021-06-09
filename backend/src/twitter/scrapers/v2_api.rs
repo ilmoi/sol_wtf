@@ -34,6 +34,9 @@ impl fmt::Display for RateLimits {
     }
 }
 
+// ------------------------------------------------------------------------------ fn (general)
+
+#[tracing::instrument(skip(config))]
 pub async fn v2_api_get(
     config: &Settings,
     mut url: String,
@@ -55,14 +58,15 @@ pub async fn v2_api_get(
         .send()
         .await?;
 
-    println!(">>> GET CALL STATUS: {}", res.status());
+    tracing::info!(">>> GET CALL STATUS: {}", res.status());
     let rate_limits = handle_rate_limits(&res);
     let body: Value = res.json().await?;
-    // println!("Body:\n\n{:#?}", &body);
-    // println!("Rate limits:\n\n{:#?}", &rate_limits);
+    // tracing::info!("Body:\n\n{:#?}", &body);
+    // tracing::info!("Rate limits:\n\n{:#?}", &rate_limits);
     Ok((body, rate_limits))
 }
 
+#[tracing::instrument]
 pub fn handle_rate_limits(res: &Response) -> RateLimits {
     let limit_left = res
         .headers()
@@ -96,14 +100,13 @@ pub fn handle_rate_limits(res: &Response) -> RateLimits {
         limit_total,
         reset_time,
     };
-
-    println!(">>> {}", rate_limits);
-
+    tracing::info!(">>> Rate limits: {:?}", rate_limits);
     rate_limits
 }
 
-// ----------------------------------------------------------------------------- specific calls
+// ----------------------------------------------------------------------------- fn (specific)
 
+#[tracing::instrument(skip(config))]
 pub async fn get_user_timeline(
     config: &Settings,
     user_id: &str,
@@ -122,6 +125,7 @@ pub async fn get_user_timeline(
     v2_api_get(&config, url, Some(&params)).await
 }
 
+#[tracing::instrument(skip(config))]
 pub async fn get_single_tweet(
     config: &Settings,
     tweet_id: &str,
@@ -140,6 +144,7 @@ pub async fn get_single_tweet(
     v2_api_get(&config, url, Some(&params)).await
 }
 
+#[tracing::instrument(skip(config))]
 pub async fn fetch_followed_users(
     config: &Settings,
     pagination_token: Option<String>,
@@ -157,6 +162,7 @@ pub async fn fetch_followed_users(
     v2_api_get(&config, url, Some(&params)).await
 }
 
+#[tracing::instrument(skip(config))]
 pub async fn fetch_all_followed_users(
     config: &Settings,
 ) -> Result<(Vec<Value>, RateLimits), reqwest::Error> {
@@ -179,6 +185,5 @@ pub async fn fetch_all_followed_users(
             None => break,
         }
     }
-
     Ok((users, rate_limits))
 }
