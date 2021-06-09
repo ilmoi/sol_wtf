@@ -304,7 +304,7 @@ pub async fn fetch_next_page_of_tweets(
         // on the first call the frontend sends the largest possible integer.
         // This doesn't work for time, so we swap it out for a unix timestamp 1 hour in the future.
         if form.last_metric == "2036854775807" {
-            last_metric = (Utc::now() + Duration::hours(1)).to_rfc3339().to_owned()
+            last_metric = (Utc::now() + Duration::hours(1)).to_rfc3339()
         }
 
         sql = format!(

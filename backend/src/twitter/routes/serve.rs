@@ -1,3 +1,5 @@
+#![allow(clippy::async_yields_async)]
+
 use crate::twitter::domain::media::{fetch_all_media_for_tweet, Media};
 use crate::twitter::domain::tweet::{fetch_next_page_of_tweets, fetch_tweet, Tweet};
 use crate::twitter::domain::user::{fetch_user_by_uuid, User};

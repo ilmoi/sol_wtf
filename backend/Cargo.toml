@@ -53,4 +53,5 @@ features = [
     "chrono",
     "migrate",
     "json",
+    "offline",
 ]
