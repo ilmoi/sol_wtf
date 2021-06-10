@@ -1,0 +1,40 @@
+# The idea here was to try and run cargo watch -x run inside a container - but it looks like w/o extra compilation it won't work
+# Plus it doesn't have the pretty colors and every time you start the container needs to do some extra compilation
+# All in all decided not worth it - locally I'll dev w/o docker
+
+FROM rust:1.50
+WORKDIR app
+
+# install postgres, needed for psql command
+RUN apt-get update -y && apt-get install -y postgresql
+
+# install bunyan, needed for output formatting
+# https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-debian-10
+RUN cd ~
+RUN curl -sL https://deb.nodesource.com/setup_16.x -o nodesource_setup.sh
+RUN . ./nodesource_setup.sh
+RUN apt install nodejs
+RUN npm i -g bunyan
+RUN cd /app
+
+# install sqlx cli, needed for migrations
+RUN cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
+
+# install cargo watch, needed for refreshes
+RUN cargo install cargo-watch
+
+ENV APP_ENVIRONMENT dev
+
+COPY . .
+
+RUN chmod +x scripts/init_db.sh
+RUN chmod +x scripts/boot.DEV.sh
+
+#(!) THIS LINE IS CRUCIAL. W/O THIS LINE YOU'RE GONNA GET "error communicating with the server: Cannot assign requested address (os error 99)"
+ENV SQLX_OFFLINE true
+RUN cargo build --bin backend
+
+#ENTRYPOINT ["cargo run | bunyan -o simple"]
+#ENTRYPOINT ["cargo watch -x run | bunyan -o simple"]
+#ENTRYPOINT ["./target/debug/backend | bunyan -o simple"]
+#ENTRYPOINT ["./scripts/boot.DEV.sh"]

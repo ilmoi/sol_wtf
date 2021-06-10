@@ -1,0 +1,58 @@
+# This one works but I had to use the rust crate and add cargo sqlx for migrations - need a diff way for doing that in prod
+
+# ------------------------------------------------------------------------------ planning
+FROM lukemathwalker/cargo-chef as planner
+WORKDIR app
+COPY . .
+# Compute a lock-like file for our project
+RUN cargo chef prepare  --recipe-path recipe.json
+
+# ------------------------------------------------------------------------------ caching of deps
+FROM lukemathwalker/cargo-chef as cacher
+WORKDIR app
+COPY --from=planner /app/recipe.json recipe.json
+# Build our project dependencies, not our application!
+RUN cargo chef cook --recipe-path recipe.json
+#todo killed --release for now
+
+# ------------------------------------------------------------------------------ build the app
+FROM rust:1.50 AS builder
+WORKDIR app
+# Copy over the cached dependencies
+COPY --from=cacher /app/target target
+COPY --from=cacher /usr/local/cargo /usr/local/cargo
+
+# Install postgres, needed for psql command to work
+RUN apt-get update -y \
+    && apt-get install -y --no-install-recommends openssl postgresql bash vim \
+    # Clean up
+    && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
+
+# Install sqlx cli, needed for migrations
+RUN cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
+
+# Copy over files needed to compile the rest of the image. (!) If any of these change, this step will have to be redone.
+COPY .cargo .cargo
+COPY src src
+COPY .env .env
+COPY Cargo.toml Cargo.toml
+COPY sqlx-data.json sqlx-data.json
+
+# Build our application, leveraging the cached deps!
+ENV SQLX_OFFLINE true
+RUN cargo build --bin backend
+#todo killed --release for now
+
+# ------------------------------------------------------------------------------ prep for launch
+
+# Copy the remaining files
+COPY config config
+COPY scripts scripts
+COPY migrations migrations
+
+ENV APP_ENVIRONMENT fake_prod
+
+RUN chmod +x scripts/init_db.sh
+RUN chmod +x scripts/boot.DEV.sh
+
+#ENTRYPOINT ["./scripts/boot.DEV.sh"]

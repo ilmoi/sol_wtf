@@ -1,0 +1,7 @@
+app:
+  port: 5000
+database:
+  port: 5432
+  username: "postgres"
+  password: "dbpw"
+  db_name: "solwtf"

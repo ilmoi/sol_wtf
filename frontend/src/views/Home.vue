@@ -170,7 +170,7 @@ export default {
     //   }).join(' ');
     // },
     async fetchMoreData($state = null) {
-      const {data} = await axios.get("http://127.0.0.1:5001/tweets4",
+      const {data} = await axios.get("/backend/tweets4",
           {
             params: {
               sort_by: this.sort_by,

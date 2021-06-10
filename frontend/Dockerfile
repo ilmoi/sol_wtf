@@ -27,4 +27,3 @@ COPY nginx.conf /etc/nginx/nginx.conf
 # footer (change user, run stuff)
 
 #ports / expose / cmd / entrypoint - all done in docker-compose
-EXPOSE 8081

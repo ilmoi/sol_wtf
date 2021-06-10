@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -x
 set -eo pipefail
+
+# Configure url differently depending on whether running inside docker
+if [[ -z "${INSIDE_DOCKER_COMPOSE}" ]]
+then
+  DB_HOST="localhost"
+else
+  DB_HOST="postgres"
+fi
+
 DB_USER=${POSTGRES_USER:=postgres}
 DB_PASSWORD="${POSTGRES_PASSWORD:=dbpw}"
 DB_NAME="${POSTGRES_DB:=solwtf}"
@@ -20,14 +29,14 @@ fi
 
 # wait for db to be ready
 export PGPASSWORD="${DB_PASSWORD}"
-until psql -h "localhost" -U "${DB_USER}" -p "${DB_PORT}" -d "postgres" -c '\q'; do
+until psql -h "${DB_HOST}" -U "${DB_USER}" -p "${DB_PORT}" -d "${DB_NAME}" -c '\q'; do
   >&2 echo "Postgres is still unavailable - sleeping"
   sleep 1
 done
 >&2 echo "Postgres is up and running on port ${DB_PORT} - running migrations now!"
 
 # create db if not there / run migrations if have any available
-export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@localhost:${DB_PORT}/${DB_NAME}
+export DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
 sqlx database create
 sqlx migrate run
 

@@ -1,8 +1,17 @@
+use sqlx::postgres::{PgConnectOptions, PgSslMode};
+use std::convert::{TryFrom, TryInto};
+
 #[derive(serde::Deserialize)]
 pub struct Settings {
-    pub app_port: u16,
+    pub app: AppSettings,
     pub database: DbSettings,
     pub twitter: TwitterSettings,
+}
+
+#[derive(serde::Deserialize)]
+pub struct AppSettings {
+    pub port: u16,
+    pub host: String,
 }
 
 #[derive(serde::Deserialize)]
@@ -12,6 +21,7 @@ pub struct DbSettings {
     pub port: u16,
     pub host: String,
     pub db_name: String,
+    pub require_ssl: bool,
 }
 
 #[derive(serde::Deserialize)]
@@ -24,11 +34,52 @@ pub struct TwitterSettings {
 }
 
 impl DbSettings {
-    pub fn connection_string(&self) -> String {
-        format!(
-            "postgres://{}:{}@{}:{}/{}",
-            self.username, self.password, self.host, self.port, self.db_name
-        )
+    pub fn conn_opts(&self) -> PgConnectOptions {
+        let ssl_mode = if self.require_ssl {
+            PgSslMode::Require
+        } else {
+            PgSslMode::Prefer
+        };
+
+        PgConnectOptions::new()
+            .host(&self.host)
+            .username(&self.username)
+            .password(&self.password)
+            .port(self.port)
+            .database(&self.db_name)
+            .ssl_mode(ssl_mode)
+    }
+}
+
+enum Environment {
+    Dev,
+    Prod,
+    FakeProd,
+}
+
+impl Environment {
+    fn to_str(&self) -> String {
+        match self {
+            Environment::Dev => "dev_config".into(),
+            Environment::Prod => "prod_config".into(),
+            Environment::FakeProd => "fake_prod_config".into(),
+        }
+    }
+}
+
+impl TryFrom<String> for Environment {
+    type Error = String;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match &value[..] {
+            "dev" => Ok(Self::Dev),
+            "prod" => Ok(Self::Prod),
+            "fake_prod" => Ok(Self::FakeProd),
+            _ => Err(format!(
+                "{} is an unsupported Environment. Use either 'dev' or 'prod'.",
+                value
+            )),
+        }
     }
 }
 
@@ -36,8 +87,24 @@ impl DbSettings {
 
 pub fn get_config() -> Result<Settings, config::ConfigError> {
     let mut settings = config::Config::default();
+    let base_path = std::env::current_dir().expect("failed to determine current dir.");
+    let config_dir = base_path.join("config");
 
-    // todo - currently db params stored in 5 places: .env, init_db.sh, configuration, deploy_app
-    settings.merge(config::File::with_name("private_config"))?;
+    // 1) merge base env
+    settings.merge(config::File::from(config_dir.join("base_config")).required(true))?;
+
+    let app_env: Environment = std::env::var("APP_ENVIRONMENT")
+        .unwrap_or_else(|_| "dev".into())
+        .try_into()
+        .expect("failed to determine App Environment.");
+
+    // 2) merge dev / prod / fake_prod env
+    settings.merge(config::File::from(config_dir.join(app_env.to_str())).required(true))?;
+
+    // 3) merge private env
+    settings.merge(config::File::from(config_dir.join("private_config")).required(true))?;
+
+    // todo - currently db params stored in 4 places: .env, init_db.sh, config folder, deploy_app
+
     settings.try_into()
 }
