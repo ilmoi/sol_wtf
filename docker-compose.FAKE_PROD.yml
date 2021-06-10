@@ -54,9 +54,9 @@ services:
     depends_on:
       - postgres
     build:
-      dockerfile: Dockerfile.TRY1
+      dockerfile: Dockerfile.FAKE_PROD
       context: ./backend
-    entrypoint: ["/app/scripts/boot.DEV.sh"]
+    entrypoint: ["/app/scripts/boot.FAKE_PROD.sh"]
     ports:
       - 5000:5000
 #    volumes:

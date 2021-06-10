@@ -44,6 +44,6 @@ sqlx migrate run
 
 # to migrate the database (in terminal):
 # 1) export DATABASE_URL=postgres://postgres:dbpw@localhost:5432/solwtf
-# 2) sqlx migrate add file_to_describe_what_migration_is_doing
+# 2) sqlx migrate add migration_name
 # 3) go into the above file and edit it wiith raw sql
 # 4) sqlx migrate run OR SKIP_DOCKER=1 ./scripts/init_db.sh
