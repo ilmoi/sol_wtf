@@ -127,15 +127,15 @@ jobs: #run in parallel, on a diff runner each
         uses: actions/checkout@v2
 
       - name: Create secrets files
-      - run: |
+        run: |
           mkdir secrets
           touch secrets/twitter.yml
           echo "twitter:" >> secrets/twitter.yml
-          echo "  consumer_key: ${{ twitter_consumer_key }}" >> secrets/twitter.yml
-          echo "  consumer_secret: ${{ twitter_consumer_secret }}" >> secrets/twitter.yml
-          echo "  access_token: ${{ twitter_access_token }}" >> secrets/twitter.yml
-          echo "  access_token_secret: ${{ twitter_access_token_secret }}" >> secrets/twitter.yml
-          echo "  bearer_token: ${{ twitter_bearer_token }}" >> secrets/twitter.yml
+          echo "  consumer_key: ${{ secrets.TWITTER_CONSUMER_KEY }}" >> secrets/twitter.yml
+          echo "  consumer_secret: ${{ secrets.TWITTER_CONSUMER_SECRET }}" >> secrets/twitter.yml
+          echo "  access_token: ${{ secrets.TWITTER_ACCESS_TOKEN }}" >> secrets/twitter.yml
+          echo "  access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}" >> secrets/twitter.yml
+          echo "  bearer_token: ${{ secrets.TWITTER_BEARER_TOKEN }}" >> secrets/twitter.yml
           ls -la
 
       - name: Configure AWS credentials
