@@ -1,0 +1,19 @@
+branch-defaults:
+  default:
+    environment: Solwtf-env3
+environment-defaults:
+  Solwtf-env3:
+    branch: null
+    repository: null
+global:
+  application_name: solwtf
+  default_ec2_keyname: plato-kp-new
+  default_platform: Docker running on 64bit Amazon Linux 2
+  default_region: us-east-1
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: null
+  sc: null
+  workspace_type: Application
