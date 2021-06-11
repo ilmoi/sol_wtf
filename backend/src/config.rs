@@ -54,7 +54,6 @@ impl DbSettings {
 enum Environment {
     Dev,
     Prod,
-    FakeProd,
 }
 
 impl Environment {
@@ -62,7 +61,6 @@ impl Environment {
         match self {
             Environment::Dev => "dev_config".into(),
             Environment::Prod => "prod_config".into(),
-            Environment::FakeProd => "fake_prod_config".into(),
         }
     }
 }
@@ -74,7 +72,6 @@ impl TryFrom<String> for Environment {
         match &value[..] {
             "dev" => Ok(Self::Dev),
             "prod" => Ok(Self::Prod),
-            "fake_prod" => Ok(Self::FakeProd),
             _ => Err(format!(
                 "{} is an unsupported Environment. Use either 'dev' or 'prod'.",
                 value
@@ -98,7 +95,7 @@ pub fn get_config() -> Result<Settings, config::ConfigError> {
         .try_into()
         .expect("failed to determine App Environment.");
 
-    // 2) merge dev / prod / fake_prod env
+    // 2) merge dev / prod / env
     settings.merge(config::File::from(config_dir.join(app_env.to_str())).required(true))?;
 
     // 3) merge secrets

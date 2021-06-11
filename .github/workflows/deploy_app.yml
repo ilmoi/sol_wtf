@@ -58,67 +58,67 @@ jobs: #run in parallel, on a diff runner each
 #          args: --all --manifest-path ./backend/Cargo.toml -- --check
 
   # https://faun.pub/setting-up-ci-cd-using-docker-aws-ecr-and-github-actions-part-1-66d7dc640e4d
-  build-frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo code
-        uses: actions/checkout@v2
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        working-directory: frontend
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sol-frontend
-          IMAGE_TAG: latest
-        run: |
-          # Build a docker container and push it to ECR
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          echo "Pushing image to ECR..."
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
-  build-nginx:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo code
-        uses: actions/checkout@v2
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        working-directory: nginx
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sol-nginx
-          IMAGE_TAG: latest
-        run: |
-          # Build a docker container and push it to ECR
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          echo "Pushing image to ECR..."
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+#  build-frontend:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout repo code
+#        uses: actions/checkout@v2
+#
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v1
+#        with:
+#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#          aws-region: us-east-1
+#
+#      - name: Login to Amazon ECR
+#        id: login-ecr
+#        uses: aws-actions/amazon-ecr-login@v1
+#
+#      - name: Build, tag, and push image to Amazon ECR
+#        id: build-image
+#        working-directory: frontend
+#        env:
+#          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#          ECR_REPOSITORY: sol-frontend
+#          IMAGE_TAG: latest
+#        run: |
+#          # Build a docker container and push it to ECR
+#          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+#          echo "Pushing image to ECR..."
+#          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+#
+#  build-nginx:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout repo code
+#        uses: actions/checkout@v2
+#
+#      - name: Configure AWS credentials
+#        uses: aws-actions/configure-aws-credentials@v1
+#        with:
+#          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#          aws-region: us-east-1
+#
+#      - name: Login to Amazon ECR
+#        id: login-ecr
+#        uses: aws-actions/amazon-ecr-login@v1
+#
+#      - name: Build, tag, and push image to Amazon ECR
+#        id: build-image
+#        working-directory: nginx
+#        env:
+#          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#          ECR_REPOSITORY: sol-nginx
+#          IMAGE_TAG: latest
+#        run: |
+#          # Build a docker container and push it to ECR
+#          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+#          echo "Pushing image to ECR..."
+#          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
   build-backend:
     runs-on: ubuntu-latest
@@ -144,6 +144,54 @@ jobs: #run in parallel, on a diff runner each
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      #todo build here separately with caching
+      - name: Prepare
+        id: prep
+        run: |
+          TAG=$(echo $GITHUB_SHA | head -c7)
+          IMAGE="backend"
+          echo ::set-output name=tagged_image::${IMAGE}:${TAG}
+          echo ::set-output name=tag::${TAG}
+
+      - name: Set up Docker Buildx
+        id: buildx
+        # Use the action from the master, as we've seen some inconsistencies with @v1
+        # Issue: https://github.com/docker/build-push-action/issues/286
+        uses: docker/setup-buildx-action@master
+        # Only worked for us with this option on 🤷‍♂️
+        with:
+          install: true
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          # Key is named differently to avoid collision
+          key: ${{ runner.os }}-multi-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-multi-buildx
+
+      - name: Build production image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./backend
+          builder: ${{ steps.buildx.outputs.name }}
+          file: backend/Dockerfile
+          # Set the desired build target here
+#          target: deploy
+          push: false
+          tags: ${{ steps.prep.outputs.tagged_image }}
+          cache-from: type=local,src=/tmp/.buildx-cache
+          # Note the mode=max here
+          # More: https://github.com/moby/buildkit#--export-cache-options
+          # And: https://github.com/docker/buildx#--cache-tonametypetypekeyvalue
+          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
+
+      - name: Move cache
+        run: |
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
@@ -157,12 +205,12 @@ jobs: #run in parallel, on a diff runner each
           IMAGE_TAG: latest
         run: |
           # Build a docker container and push it to ECR
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        #todo then swap out this line for re-taging
+          docker tag ${{ steps.prep.outputs.tagged_image }} $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "Pushing image to ECR..."
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-#todo pass secrets as artifact?
 
 #  deploy:
 #    runs-on: ubuntu-latest
