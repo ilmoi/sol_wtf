@@ -1,0 +1,47 @@
+version: '3.8'
+services:
+
+  # ------------------------------------------------------------------------------
+  # PUBLIC
+
+#  postgres:
+#    image: postgres:latest
+#    # No need to specify entrypoint, it's a postgres container
+#    ports:
+#      - 5432:5432
+#    environment:
+#      - POSTGRES_USER=postgres
+#      - POSTGRES_PASSWORD=dbpw
+#      - POSTGRES_DB=solwtf
+
+  # ------------------------------------------------------------------------------
+  # PRIVATE
+
+  backend:
+#    image: 265784926055.dkr.ecr.us-east-1.amazonaws.com/sol-backend:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./backend
+    entrypoint: ["/app/scripts/boot.PROD.sh"]
+    ports:
+      - 5000:5000
+
+  frontend:
+#    image: 265784926055.dkr.ecr.us-east-1.amazonaws.com/sol-frontend:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./frontend
+    depends_on:
+      - backend
+    # No need to specify entrypoint, it's a postgres container
+    ports:
+      - 8080:8080
+
+  nginx:
+    depends_on:
+      - backend
+      - frontend
+    image: 265784926055.dkr.ecr.us-east-1.amazonaws.com/sol-nginx:latest
+    # No need to specify entrypoint, it's a postgres container
+    ports:
+      - 80:80

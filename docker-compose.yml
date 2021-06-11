@@ -1,36 +1,14 @@
 version: '3.8'
 services:
 
-  # ------------------------------------------------------------------------------
-  # PUBLIC
-
-#  postgres: #todo for local testing only
-#    image: postgres:latest
-#    # No need to specify entrypoint, it's a postgres container
-#    ports:
-#      - 5432:5432
-#    environment:
-#      - POSTGRES_USER=postgres
-#      - POSTGRES_PASSWORD=dbpw
-#      - POSTGRES_DB=solwtf
-
-  # ------------------------------------------------------------------------------
-  # PRIVATE
-
   backend:
     image: 265784926055.dkr.ecr.us-east-1.amazonaws.com/sol-backend:latest
-#    build: #todo for local testing only
-#      dockerfile: Dockerfile
-#      context: ./backend
     entrypoint: ["/app/scripts/boot.PROD.sh"]
     ports:
       - 5000:5000
 
   frontend:
     image: 265784926055.dkr.ecr.us-east-1.amazonaws.com/sol-frontend:latest
-#    build: #todo for local testing only
-#      dockerfile: Dockerfile
-#      context: ./frontend
     depends_on:
       - backend
     # No need to specify entrypoint, it's a postgres container

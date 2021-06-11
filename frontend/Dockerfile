@@ -8,6 +8,8 @@ RUN yarn global add @vue/cli
 COPY package*.json yarn.lock ./
 RUN yarn
 COPY . .
+# need to pass env during build stage as well as during prod
+ENV APP_ENVIRONMENT prod
 RUN yarn build
 
 ################################################################################
