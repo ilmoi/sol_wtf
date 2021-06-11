@@ -57,7 +57,7 @@ jobs: #run in parallel, on a diff runner each
 #          command: fmt
 #          args: --all --manifest-path ./backend/Cargo.toml -- --check
 
-  #   https://faun.pub/setting-up-ci-cd-using-docker-aws-ecr-and-github-actions-part-1-66d7dc640e4d
+  # https://faun.pub/setting-up-ci-cd-using-docker-aws-ecr-and-github-actions-part-1-66d7dc640e4d
   build-frontend:
     runs-on: ubuntu-latest
     steps:
@@ -89,7 +89,81 @@ jobs: #run in parallel, on a diff runner each
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
-#todo nginx should be similar, backend will require secrets
+  build-nginx:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo code
+        uses: actions/checkout@v2
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        working-directory: nginx
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sol-nginx
+          IMAGE_TAG: latest
+        run: |
+          # Build a docker container and push it to ECR
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "Pushing image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo code
+        uses: actions/checkout@v2
+
+      - name: Create secrets files
+      - run: |
+          mkdir secrets
+          touch secrets/twitter.yml
+          echo "twitter:" >> secrets/twitter.yml
+          echo "  consumer_key: ${{ twitter_consumer_key }}" >> secrets/twitter.yml
+          echo "  consumer_secret: ${{ twitter_consumer_secret }}" >> secrets/twitter.yml
+          echo "  access_token: ${{ twitter_access_token }}" >> secrets/twitter.yml
+          echo "  access_token_secret: ${{ twitter_access_token_secret }}" >> secrets/twitter.yml
+          echo "  bearer_token: ${{ twitter_bearer_token }}" >> secrets/twitter.yml
+          ls -la
+        #todo temp
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push image to Amazon ECR
+        id: build-image
+        working-directory: backend
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sol-backend
+          IMAGE_TAG: latest
+        run: |
+          # Build a docker container and push it to ECR
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+          echo "Pushing image to ECR..."
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+
 
 #  Deploy:
 #    runs-on: ubuntu-latest
