@@ -187,7 +187,7 @@ jobs: #run in parallel, on a diff runner each
 
   deploy:
     runs-on: ubuntu-latest
-#    needs: [build-frontend, build-nginx, build-backend]
+    needs: [build-frontend, build-nginx, build-backend]
     steps:
       - name: Checkout repo code
         uses: actions/checkout@v2
