@@ -22,8 +22,6 @@ services:
 #    build: #todo for local testing only
 #      dockerfile: Dockerfile
 #      context: ./backend
-    depends_on:
-      - postgres
     entrypoint: ["/app/scripts/boot.PROD.sh"]
     ports:
       - 5000:5000
