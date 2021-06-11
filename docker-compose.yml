@@ -18,7 +18,10 @@ services:
   # PRIVATE
 
   backend:
-    image: 265784926055.dkr.ecr.us-east-1.amazonaws.com/sol-backend:latest
+#    image: 265784926055.dkr.ecr.us-east-1.amazonaws.com/sol-backend:latest
+    build:
+      dockerfile: Dockerfile
+      context: ./backend
     depends_on:
       - postgres
     entrypoint: ["/app/scripts/boot.PROD.sh"]

@@ -47,6 +47,9 @@ COPY config config
 COPY scripts scripts
 COPY migrations migrations
 
+RUN chmod +x app/scripts/boot.PROD.sh
+RUN chmod +x app/scripts/db_init.sh
+
 ENV APP_ENVIRONMENT prod
 
 # ------------------------------------------------------------------------------
