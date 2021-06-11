@@ -1,7 +1,8 @@
 import axios from 'axios'
 
 let host;
-const env = process.env.APP_ENVIRONMENT
+export const env = process.env.VUE_APP_ENVIRONMENT
+console.log(`env is ${env}`)
 
 // set to prod in Dockerfile
 if (env === 'prod') {
