@@ -1,5 +1,6 @@
 app:
   host: 0.0.0.0
 database:
-  host: "postgres" #todo to change after proper db setup
-  require_ssl: false #todo to change after proper db setup
+  host: "solwtf.cwkmm7nagphm.us-east-1.rds.amazonaws.com"
+  password: "dbpwdbpw"
+  require_ssl: true

@@ -193,14 +193,15 @@ jobs: #run in parallel, on a diff runner each
         uses: actions/checkout@v2
 
       # need to clean up other Dockerfiles, otherwise EB won't work properly
-      # also have to move EB contents into . since next step will only look in .
-      - name: Cleanup & Move EB stuff in
+      - name: Delete other Dockerfiles
         run: |
           rm -rf backend
           rm -rf frontend
           rm -rf nginx
-          cp -r eb/.elasticbeanstalk .
-          cp eb/docker-compose.yml .
+#          cp -r eb/.elasticbeanstalk .
+#          cp eb/docker-compose.yml .
+          ls -la
+          echo ${{ secrets.ENVIRONMENT_NAME }}
 
       - name: Elastic Beanstalk Deployment
         uses: hmanzur/actions-aws-eb@v1.0.0
