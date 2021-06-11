@@ -63,4 +63,4 @@ services:
 #      - /app/target #we don't want to copy this from outside the ctr
 #      - ./backend:/app
 
-#todo for this to work need to uncomment **/private_config.yml in .dockerignore
+#todo for this to work need to figure out how to pass secrets in

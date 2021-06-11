@@ -101,10 +101,15 @@ pub fn get_config() -> Result<Settings, config::ConfigError> {
     // 2) merge dev / prod / fake_prod env
     settings.merge(config::File::from(config_dir.join(app_env.to_str())).required(true))?;
 
-    // 3) merge private env
-    settings.merge(config::File::from(config_dir.join("private_config")).required(true))?;
+    // 3) merge secrets
+    settings.merge(config::File::from(base_path.join("../secrets/twitter")).required(true))?;
 
-    // todo - currently db params stored in 4 places: .env, init_db.sh, config folder, deploy_app
+    // todo - currently db params stored in all these places:
+    //  .env,
+    //  scripts/,
+    //  config/,
+    //  docker-compose.yml,
+    //  .github/workflows/deploy_app.yml
 
     settings.try_into()
 }
