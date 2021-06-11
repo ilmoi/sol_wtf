@@ -175,21 +175,17 @@ jobs: #run in parallel, on a diff runner each
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: test
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sol-backend
-          IMAGE_TAG: latest
-        run: |
-          echo image tag is $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+#      - name: test
+#        env:
+#          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+#          ECR_REPOSITORY: sol-backend
+#          IMAGE_TAG: latest
+#        run: |
+#          echo image tag is $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
 
       - name: Build + push production image
         uses: docker/build-push-action@v2
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sol-backend
-          IMAGE_TAG: latest
         with:
           context: ./backend
           builder: ${{ steps.buildx.outputs.name }}
@@ -197,7 +193,7 @@ jobs: #run in parallel, on a diff runner each
           # Set the desired build target here
 #          target: deploy
           push: true
-          tags: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          tags: ${{ steps.login-ecr.outputs.registry }}/sol-backend:latest
           cache-from: type=local,src=/tmp/.buildx-cache
           # Note the mode=max here
           # More: https://github.com/moby/buildkit#--export-cache-options
