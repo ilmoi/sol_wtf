@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # get details to connect to db
-DB_PASSWORD=$(grep -A2 'database:' ../config/prod_config.yml | tail -n1 | awk '{ print $2}')
-DB_HOST=$(grep -A1 'database:' ../config/prod_config.yml | tail -n1 | awk '{ print $2}')
-DB_USER=$(grep -A2 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
-DB_PORT=$(grep -A1 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
-DB_NAME=$(grep -A3 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
+DB_PASSWORD=$(grep -A2 'database:' ./config/prod_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
+DB_HOST=$(grep -A1 'database:' ./config/prod_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
+DB_USER=$(grep -A2 'database:' ./config/base_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
+DB_PORT=$(grep -A1 'database:' ./config/base_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
+DB_NAME=$(grep -A3 'database:' ./config/base_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
 
 # wait for db to be ready
 export PGPASSWORD="${DB_PASSWORD}"

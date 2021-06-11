@@ -3,11 +3,11 @@ set -x
 set -eo pipefail
 
 # get details to connect to db
-DB_PASSWORD=$(grep -A2 'database:' ../config/dev_config.yml | tail -n1 | awk '{ print $2}')
-DB_HOST=$(grep -A1 'database:' ../config/dev_config.yml | tail -n1 | awk '{ print $2}')
-DB_USER=$(grep -A2 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
-DB_PORT=$(grep -A1 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
-DB_NAME=$(grep -A3 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
+DB_PASSWORD=$(grep -A2 'database:' ./config/dev_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
+DB_HOST=$(grep -A1 'database:' ./config/dev_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
+DB_USER=$(grep -A2 'database:' ./config/base_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
+DB_PORT=$(grep -A1 'database:' ./config/base_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
+DB_NAME=$(grep -A3 'database:' ./config/base_config.yml | tail -n1 | awk '{ print $2}' | tr -d '"')
 
 # Allow to skip Docker if a dockerized Postgres database is already running
 if [[ -z "${SKIP_DOCKER}" ]]

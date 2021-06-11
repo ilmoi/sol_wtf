@@ -1,6 +1,7 @@
 app:
-  host: 0.0.0.0
+  host: "0.0.0.0"
 database:
   host: "solwtf.cwkmm7nagphm.us-east-1.rds.amazonaws.com"
+  #todo shouldn't be here
   password: "dbpwdbpw"
   require_ssl: true
