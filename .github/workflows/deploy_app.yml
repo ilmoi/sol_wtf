@@ -145,13 +145,13 @@ jobs: #run in parallel, on a diff runner each
           aws-region: us-east-1
 
       #todo build here separately with caching
-      - name: Prepare
-        id: prep
-        run: |
-          TAG=$(echo $GITHUB_SHA | head -c7)
-          IMAGE="backend"
-          echo ::set-output name=tagged_image::${IMAGE}:${TAG}
-          echo ::set-output name=tag::${TAG}
+#      - name: Prepare
+#        id: prep
+#        run: |
+#          TAG=$(echo $GITHUB_SHA | head -c7)
+#          IMAGE="backend"
+#          echo ::set-output name=tagged_image::${IMAGE}:${TAG}
+#          echo ::set-output name=tag::${TAG}
 
       - name: Set up Docker Buildx
         id: buildx
@@ -171,16 +171,24 @@ jobs: #run in parallel, on a diff runner each
           restore-keys: |
             ${{ runner.os }}-multi-buildx
 
-      - name: Build production image
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build + push production image
         uses: docker/build-push-action@v2
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sol-backend
+          IMAGE_TAG: latest
         with:
           context: ./backend
           builder: ${{ steps.buildx.outputs.name }}
           file: backend/Dockerfile
           # Set the desired build target here
 #          target: deploy
-          push: false
-          tags: ${{ steps.prep.outputs.tagged_image }}
+          push: true
+          tags: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           cache-from: type=local,src=/tmp/.buildx-cache
           # Note the mode=max here
           # More: https://github.com/moby/buildkit#--export-cache-options
@@ -192,23 +200,8 @@ jobs: #run in parallel, on a diff runner each
           rm -rf /tmp/.buildx-cache
           mv /tmp/.buildx-cache-new /tmp/.buildx-cache
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
-        working-directory: backend
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: sol-backend
-          IMAGE_TAG: latest
-        run: |
-          # Build a docker container and push it to ECR
-          docker tag ${{ steps.prep.outputs.tagged_image }} $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "Pushing image to ECR..."
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
+#          echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
 
 #  deploy:
