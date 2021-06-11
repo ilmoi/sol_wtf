@@ -175,6 +175,15 @@ jobs: #run in parallel, on a diff runner each
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      - name: test
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: sol-backend
+          IMAGE_TAG: latest
+        run: |
+          echo image tag is $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+
       - name: Build + push production image
         uses: docker/build-push-action@v2
         env:
