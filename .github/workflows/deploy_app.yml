@@ -128,14 +128,14 @@ jobs: #run in parallel, on a diff runner each
 
       - name: Create secrets files
         run: |
-          mkdir secrets
-          touch secrets/twitter.yml
-          echo "twitter:" >> secrets/twitter.yml
-          echo "  consumer_key: ${{ secrets.TWITTER_CONSUMER_KEY }}" >> secrets/twitter.yml
-          echo "  consumer_secret: ${{ secrets.TWITTER_CONSUMER_SECRET }}" >> secrets/twitter.yml
-          echo "  access_token: ${{ secrets.TWITTER_ACCESS_TOKEN }}" >> secrets/twitter.yml
-          echo "  access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}" >> secrets/twitter.yml
-          echo "  bearer_token: ${{ secrets.TWITTER_BEARER_TOKEN }}" >> secrets/twitter.yml
+          mkdir backend/secrets
+          touch backend/secrets/twitter.yml
+          echo "twitter:" >> backend/secrets/twitter.yml
+          echo "  consumer_key: ${{ secrets.TWITTER_CONSUMER_KEY }}" >> backend/secrets/twitter.yml
+          echo "  consumer_secret: ${{ secrets.TWITTER_CONSUMER_SECRET }}" >> backend/secrets/twitter.yml
+          echo "  access_token: ${{ secrets.TWITTER_ACCESS_TOKEN }}" >> backend/secrets/twitter.yml
+          echo "  access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}" >> backend/secrets/twitter.yml
+          echo "  bearer_token: ${{ secrets.TWITTER_BEARER_TOKEN }}" >> backend/secrets/twitter.yml
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1

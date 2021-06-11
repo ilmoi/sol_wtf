@@ -102,7 +102,7 @@ pub fn get_config() -> Result<Settings, config::ConfigError> {
     settings.merge(config::File::from(config_dir.join(app_env.to_str())).required(true))?;
 
     // 3) merge secrets
-    settings.merge(config::File::from(base_path.join("../secrets/twitter")).required(true))?;
+    settings.merge(config::File::from(base_path.join("./secrets/twitter")).required(true))?;
 
     // todo - currently db params stored in all these places:
     //  .env,

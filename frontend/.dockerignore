@@ -182,4 +182,9 @@ override.tf.json
 **/old/
 
 # Secrets
-**/secrets/
+#**/secrets/ #todo not ideal, but for now since containers are private this is fine
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml

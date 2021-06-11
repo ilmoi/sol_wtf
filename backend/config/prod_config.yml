@@ -1,5 +1,5 @@
 app:
   host: 0.0.0.0
 database:
-  host: "postgres" #todo to be replaced with aws string
-  require_ssl: true
+  host: "postgres" #todo to change after proper db setup
+  require_ssl: false #todo to change after proper db setup

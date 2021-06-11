@@ -43,12 +43,10 @@ COPY --from=builder /app/target/release/backend backend
 # ------------------------------------------------------------------------------
 
 # Copy the remaining files
-COPY config config
-COPY scripts scripts
-COPY migrations migrations
+COPY . .
 
-RUN chmod +x app/scripts/boot.PROD.sh
-RUN chmod +x app/scripts/db_init.sh
+RUN chmod +x /app/scripts/boot.PROD.sh
+RUN chmod +x /app/scripts/init_db.sh
 
 ENV APP_ENVIRONMENT prod
 
