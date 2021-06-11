@@ -2,18 +2,12 @@
 set -x
 set -eo pipefail
 
-# Configure url differently depending on whether running inside docker
-if [[ -z "${INSIDE_DOCKER_COMPOSE}" ]]
-then
-  DB_HOST="localhost"
-else
-  DB_HOST="postgres"
-fi
-
-DB_USER=${POSTGRES_USER:=postgres}
-DB_PASSWORD="${POSTGRES_PASSWORD:=dbpw}"
-DB_NAME="${POSTGRES_DB:=solwtf}"
-DB_PORT="${POSTGRES_PORT:=5432}"
+# get details to connect to db
+DB_PASSWORD=$(grep -A2 'database:' ../config/dev_config.yml | tail -n1 | awk '{ print $2}')
+DB_HOST=$(grep -A1 'database:' ../config/dev_config.yml | tail -n1 | awk '{ print $2}')
+DB_USER=$(grep -A2 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
+DB_PORT=$(grep -A1 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
+DB_NAME=$(grep -A3 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
 
 # Allow to skip Docker if a dockerized Postgres database is already running
 if [[ -z "${SKIP_DOCKER}" ]]

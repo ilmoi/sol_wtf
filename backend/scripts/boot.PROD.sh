@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# wait for db to be ready
-DB_PASSWORD=dbpw
-DB_HOST=postgres
-DB_USER=postgres
-DB_PORT=5432
-DB_NAME=solwtf
+# get details to connect to db
+DB_PASSWORD=$(grep -A2 'database:' ../config/prod_config.yml | tail -n1 | awk '{ print $2}')
+DB_HOST=$(grep -A1 'database:' ../config/prod_config.yml | tail -n1 | awk '{ print $2}')
+DB_USER=$(grep -A2 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
+DB_PORT=$(grep -A1 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
+DB_NAME=$(grep -A3 'database:' ../config/base_config.yml | tail -n1 | awk '{ print $2}')
 
+# wait for db to be ready
 export PGPASSWORD="${DB_PASSWORD}"
 until psql -h "${DB_HOST}" -U "${DB_USER}" -p "${DB_PORT}" -d "${DB_NAME}" -c '\q'; do
   >&2 echo "Postgres is still unavailable - sleeping"
