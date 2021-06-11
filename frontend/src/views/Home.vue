@@ -76,6 +76,9 @@
           </div>
 
         </HiddenDetails>
+
+        <button @click="pullStuff">pull</button>
+
       </div>
 
       <!--FEED-->
@@ -102,6 +105,7 @@ import axios from "axios";
 import Tweet from "@/components/Tweet"
 import HiddenDetails from "@/components/HiddenDetails";
 import {Tweet as TweedEmbed} from 'vue-tweet-embed';
+import {fetchSecure} from "@/helpers";
 
 export default {
   components: {
@@ -170,7 +174,7 @@ export default {
     //   }).join(' ');
     // },
     async fetchMoreData($state = null) {
-      const {data} = await axios.get("/backend/tweets4",
+      const data = await fetchSecure("tweets4",
           {
             params: {
               sort_by: this.sort_by,
@@ -254,6 +258,9 @@ export default {
       })
 
       return flag
+    },
+    pullStuff() {
+      fetchSecure("pull")
     }
   },
 }

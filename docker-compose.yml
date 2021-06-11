@@ -28,6 +28,9 @@ services:
 
   frontend:
     image: 265784926055.dkr.ecr.us-east-1.amazonaws.com/sol-frontend:latest
+#    build: #todo for local testing only
+#      dockerfile: Dockerfile
+#      context: ./frontend
     depends_on:
       - backend
     # No need to specify entrypoint, it's a postgres container
