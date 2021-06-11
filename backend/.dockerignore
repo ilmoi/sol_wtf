@@ -62,6 +62,7 @@ override.tf.json
 **/*.out
 **/.aws/
 **/.aws
+**/old/
 
 # Secrets
 **/secrets/

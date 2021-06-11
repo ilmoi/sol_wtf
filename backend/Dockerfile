@@ -18,7 +18,14 @@ WORKDIR app
 # Copy over the cached dependencies
 COPY --from=cacher /app/target target
 COPY --from=cacher /usr/local/cargo /usr/local/cargo
-COPY . .
+
+# Copy over files needed to compile the rest of the image. (!) If any of these change, this step will have to be redone.
+COPY .cargo .cargo
+COPY src src
+COPY .env .env
+COPY Cargo.toml Cargo.toml
+COPY sqlx-data.json sqlx-data.json
+
 # Build our application, leveraging the cached deps!
 ENV SQLX_OFFLINE true
 RUN cargo build --release --bin backend
@@ -27,13 +34,22 @@ RUN cargo build --release --bin backend
 FROM debian:buster-slim AS runtime
 WORKDIR app
 RUN apt-get update -y \
-    && apt-get install -y --no-install-recommends openssl postgresql vim bash \
+    && apt-get install -y --no-install-recommends openssl ca-certificates postgresql vim bash \
     # Clean up
     && apt-get autoremove -y && apt-get clean -y && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/target/release/backend backend
+
+# header (image, deps, user, workdir)
+# ------------------------------------------------------------------------------
+
+# Copy the remaining files
 COPY config config
 COPY scripts scripts
+COPY migrations migrations
+
 ENV APP_ENVIRONMENT prod
 
-#ENTRYPOINT ["./scripts/boot.PROD.sh"]
+# ------------------------------------------------------------------------------
+# footer (change user, run stuff)
 
+#ports / expose / cmd / entrypoint - all done in docker-compose
