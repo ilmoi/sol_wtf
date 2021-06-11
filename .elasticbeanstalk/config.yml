@@ -1,0 +1,19 @@
+branch-defaults:
+  master:
+    environment: Dcplay-env
+environment-defaults:
+  Dcplay-env:
+    branch: null
+    repository: null
+global:
+  application_name: dc-play
+  default_ec2_keyname: null
+  default_platform: Docker running on 64bit Amazon Linux
+  default_region: us-east-1
+  include_git_submodules: true
+  instance_profile: null
+  platform_name: null
+  platform_version: null
+  profile: null
+  sc: git
+  workspace_type: Application

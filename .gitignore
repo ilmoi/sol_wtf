@@ -198,10 +198,5 @@ override.tf.json
 **/.aws/
 **/.aws
 
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
-!.elasticbeanstalk/*.cfg.yml
-!.elasticbeanstalk/*.global.yml
-
 # Secrets
 **/secrets/
