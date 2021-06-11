@@ -137,7 +137,6 @@ jobs: #run in parallel, on a diff runner each
           echo "  access_token_secret: ${{ twitter_access_token_secret }}" >> secrets/twitter.yml
           echo "  bearer_token: ${{ twitter_bearer_token }}" >> secrets/twitter.yml
           ls -la
-        #todo temp
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
