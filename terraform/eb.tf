@@ -90,7 +90,7 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "Subnets"
     namespace = "aws:ec2:vpc"
-    value     = "${aws_subnet.public_a.id},${aws_subnet.public_b.id}"
+    value     = aws_subnet.public_a.id #for now adding only a, so that instances are in the same AZ as the db
   }
   setting {
     name      = "ELBSubnets"
@@ -99,36 +99,36 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   }
   # ------------------------------------------------------------------------------ backend /health endpoint
   setting {
-    name = "HealthCheckPath"
+    name      = "HealthCheckPath"
     namespace = "aws:elasticbeanstalk:environment:process:backend"
-    value = "/health"
+    value     = "/health"
   }
   setting {
-    name = "Rules"
+    name      = "Rules"
     namespace = "aws:elbv2:listener:80"
-    value = "health"
+    value     = "health"
   }
   setting {
-    name = "PathPatterns"
+    name      = "PathPatterns"
     namespace = "aws:elbv2:listenerrule:health"
-    value = "/health"
+    value     = "/health"
   }
   setting {
-    name = "Process"
+    name      = "Process"
     namespace = "aws:elbv2:listenerrule:health"
-    value = "backend"
+    value     = "backend"
   }
   setting {
-    name = "Priority"
+    name      = "Priority"
     namespace = "aws:elbv2:listenerrule:health"
-    value = "1"
+    value     = "1"
   }
   # ------------------------------------------------------------------------------ enhanced health monitoring
   # todo ensure enhanced health works ok (200/300/400 show ok) (nginx folder issue again...)
   setting {
-    name = "SystemType"
+    name      = "SystemType"
     namespace = "aws:elasticbeanstalk:healthreporting:system"
-    value = "enhanced"
+    value     = "enhanced"
   }
   # ------------------------------------------------------------------------------ logs
   setting {
@@ -169,9 +169,9 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
     value     = "default"
   }
   setting {
-    name = "Protocol"
+    name      = "Protocol"
     namespace = "aws:elbv2:listener:443"
-    value = "HTTPS"
+    value     = "HTTPS"
   }
   setting {
     name      = "SSLCertificateArns"

@@ -23,25 +23,32 @@ resource "aws_security_group" "rds" {
 }
 
 resource "aws_db_instance" "main" {
-  identifier = "${local.prefix}-db" #how we access our db in other parts of aws
-  name       = "solwtf"             #db name within the postgres server
+  identifier        = "${local.prefix}-db"               #how we access our db in other parts of aws
+  name              = "solwtf"                           #db name within the postgres server
+  availability_zone = "${data.aws_region.current.name}a" #putting both the db and the EB instances into A
 
-  #todo look through other options for db
-
-  instance_class    = "db.t2.large"
-  allocated_storage = 20
-  storage_type      = "gp2"
+  instance_class        = "db.t2.large"
+  allocated_storage     = 100 #todo for now don't see a need for IOPS-optimized, see how perf does
+  max_allocated_storage = 500
+  storage_type          = "gp2"
 
   engine         = "postgres"
   engine_version = "12.5"
 
-  db_subnet_group_name    = aws_db_subnet_group.main.name
-  password                = var.db_password
-  username                = var.db_username
-  backup_retention_period = 0     #todo not storing any sensisitve / important data
-  multi_az                = false #todo not storing any sensisitve / important data
-  skip_final_snapshot     = true  #creates problems in terraform
-  vpc_security_group_ids  = [aws_security_group.rds.id]
+  db_subnet_group_name   = aws_db_subnet_group.main.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+
+  password = var.db_password
+  username = var.db_username
+
+  # todo all of below would be different if we stored any sensitive/important data
+  backup_retention_period = 0
+  multi_az                = false #doubles the cost if true - two AZs
+  deletion_protection     = false
+  skip_final_snapshot     = true #creates problems in terraform if try to create / delete multiple times
+  apply_immediately       = true
+  publicly_accessible     = true
+
   tags = merge(
     local.common_tags,
     tomap({ Name : "${local.prefix}-rds-main" })

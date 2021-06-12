@@ -102,7 +102,9 @@ pub fn get_config() -> Result<Settings, config::ConfigError> {
     settings.merge(config::File::from(base_path.join("./secrets/twitter")).required(true))?;
 
     // todo - currently db params stored in all these places:
+    //  [prod]
     //  config/ - proper place where db config should be recorded,
+    //  [local]
     //  .env - LOCAL COMPILATION only (compilation in CICD uses sqlx-data.json),
     //  docker-compose.yml - LOCAL TESTING only,
     //  .github/workflows/deploy_app.yml - CLIPPY only,

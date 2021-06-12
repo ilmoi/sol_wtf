@@ -14,8 +14,8 @@ resource "aws_route53_record" "app" {
   type    = "A"
   alias {
     evaluate_target_health = false
-    name = data.aws_lb.eb-lb.dns_name
-    zone_id = data.aws_lb.eb-lb.zone_id
+    name                   = data.aws_lb.eb-lb.dns_name
+    zone_id                = data.aws_lb.eb-lb.zone_id
   }
 }
 
@@ -24,7 +24,7 @@ resource "aws_route53_record" "app" {
 
 # define the type of validation we want as "DNS"
 resource "aws_acm_certificate" "cert" {
-//  domain_name       = aws_route53_record.app.fqdn #fully qualified domain name
+  //  domain_name       = aws_route53_record.app.fqdn #fully qualified domain name
   domain_name       = "sol.wtf" #can't use dynamic name above, creates a cycle
   validation_method = "DNS"
   tags              = local.common_tags
