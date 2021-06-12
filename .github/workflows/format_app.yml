@@ -1,58 +1,57 @@
-#name: format-app
-#
-##todo not using this much right now, but in theory this should block building / deploying if fails. Should also have tests.
-#
-## trigger on push to any branch
-#on:
-#  push
-#
-#env:
-#  CARGO_TERM_COLOR: always
-#
-#jobs:
-#  clippy:
-#    name: clippy
-#    runs-on: ubuntu-latest
-#    services:
-#      postgres:
-#        image: postgres:13
-#        env:
-#          POSTGRES_USER: postgres
-#          POSTGRES_PASSWORD: dbpw
-#          POSTGRES_DB: solwtf
-#        ports:
-#          - 5432:5432
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: actions-rs/toolchain@v1
-#        with:
-#          toolchain: stable
-#          override: true
-#          components: clippy
-#      - name: Migrate database
-#        working-directory: ./backend
-#        run: |
-#          sudo apt-get install libpq-dev -y
-#          cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
-#          SKIP_DOCKER=true scripts/init_db.sh
-#      - name: Check sqlx metadata file
-#        cargo run sqlx prepare --check -- --bin backend
-#      - uses: actions-rs/clippy-check@v1
-#        with:
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#          args: --manifest-path ./backend/Cargo.toml -- -D warnings
-#
-#  fmt:
-#    name: rustfmt
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: actions-rs/toolchain@v1
-#        with:
-#          toolchain: stable
-#          override: true
-#          components: rustfmt
-#      - uses: actions-rs/cargo@v1
-#        with:
-#          command: fmt
-#          args: --all --manifest-path ./backend/Cargo.toml -- --check
+name: format-app
+
+# trigger on push to any branch
+on:
+  push:
+    branches: [ doesnotexist ] #todo not using this much right now, but in theory this should block building / deploying if fails. Should also have tests.
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: dbpw
+          POSTGRES_DB: solwtf
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: clippy
+      - name: Migrate database
+        working-directory: ./backend
+        run: |
+          sudo apt-get install libpq-dev -y
+          cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
+          SKIP_DOCKER=true scripts/init_db.sh
+      - name: Check sqlx metadata file
+        cargo run sqlx prepare --check -- --bin backend
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          args: --manifest-path ./backend/Cargo.toml -- -D warnings
+
+  fmt:
+    name: rustfmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all --manifest-path ./backend/Cargo.toml -- --check
