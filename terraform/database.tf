@@ -2,7 +2,7 @@ resource "aws_db_subnet_group" "main" {
   name = "${local.prefix}-main" #for some reason tags not enough, also need this line
   # db will be available from each of these subnets
   subnet_ids = [
-    #todo our app only stores tweets / reddit posts - don't care if it's public
+    #todo not storing any sensisitve / important data
     aws_subnet.public_a.id,
     aws_subnet.public_b.id,
   ]
@@ -38,8 +38,8 @@ resource "aws_db_instance" "main" {
   db_subnet_group_name    = aws_db_subnet_group.main.name
   password                = var.db_password
   username                = var.db_username
-  backup_retention_period = 0     #todo he said 7 typically good
-  multi_az                = false #todo in prod he said should be true
+  backup_retention_period = 0     #todo not storing any sensisitve / important data
+  multi_az                = false #todo not storing any sensisitve / important data
   skip_final_snapshot     = true  #creates problems in terraform
   vpc_security_group_ids  = [aws_security_group.rds.id]
   tags = merge(
