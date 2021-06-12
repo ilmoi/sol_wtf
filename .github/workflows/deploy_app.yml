@@ -1,66 +1,23 @@
-name: deploy app
+name: build-deploy-app
 
 on:
+  # trigger on push directly to master
   push:
     branches: [ master ]
-  pull_request:
+  # or on successful approval of PR into master (see if statements for each job below)
+  # todo: probably should build w/o pushing BEFORE allowing merge > then push on merge
+  pull_request_review:
     branches: [ master ]
+    types: [submitted]
 
 env:
   CARGO_TERM_COLOR: always
 
-jobs: #run in parallel, on a diff runner each
-#  clippy:
-#    name: clippy
-#    runs-on: ubuntu-latest
-#    services:
-#      postgres:
-#        image: postgres:13
-#        env:
-#          POSTGRES_USER: postgres
-#          POSTGRES_PASSWORD: dbpw
-#          POSTGRES_DB: solwtf
-#        ports:
-#          - 5432:5432
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: actions-rs/toolchain@v1
-#        with:
-#          toolchain: stable
-#          override: true
-#          components: clippy
-#      - name: Migrate database
-#        working-directory: ./backend
-#        run: |
-#          sudo apt-get install libpq-dev -y
-#          cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
-#          SKIP_DOCKER=true scripts/init_db.sh
-#      - name: Check sqlx metadata file
-#        cargo run sqlx prepare --check -- --bin backend
-#      - uses: actions-rs/clippy-check@v1
-#        with:
-#          token: ${{ secrets.GITHUB_TOKEN }}
-#          args: --manifest-path ./backend/Cargo.toml -- -D warnings
-
-#  fmt:
-#    name: rustfmt
-#    runs-on: ubuntu-latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - uses: actions-rs/toolchain@v1
-#        with:
-#          toolchain: stable
-#          override: true
-#          components: rustfmt
-#      - uses: actions-rs/cargo@v1
-#        with:
-#          command: fmt
-#          args: --all --manifest-path ./backend/Cargo.toml -- --check
-
-  # ------------------------------------------------------------------------------
-
+#run in parallel, on a diff runner each
+jobs:
   # https://faun.pub/setting-up-ci-cd-using-docker-aws-ecr-and-github-actions-part-1-66d7dc640e4d
   build-frontend:
+    if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo code
@@ -92,6 +49,7 @@ jobs: #run in parallel, on a diff runner each
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
   build-nginx:
+    if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo code
@@ -124,6 +82,7 @@ jobs: #run in parallel, on a diff runner each
 
   # https://github.com/docker/build-push-action/blob/master/docs/advanced/cache.md
   build-backend:
+    if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repo code
@@ -186,6 +145,7 @@ jobs: #run in parallel, on a diff runner each
   # ------------------------------------------------------------------------------
 
   deploy:
+    if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     needs: [build-frontend, build-nginx, build-backend]
     steps:
