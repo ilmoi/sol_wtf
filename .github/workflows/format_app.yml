@@ -35,6 +35,7 @@ jobs:
           cargo install --locked --version=0.5.1 sqlx-cli --no-default-features --features postgres
           SKIP_DOCKER=true scripts/init_db.sh
       - name: Check sqlx metadata file
+        #sqlx offline compilation check
         cargo run sqlx prepare --check -- --bin backend
       - uses: actions-rs/clippy-check@v1
         with:
