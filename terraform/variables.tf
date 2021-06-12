@@ -14,6 +14,11 @@ variable "db_password" {
   description = "Password for the RDS postgres instance"
 }
 
-variable "bastion_key_name" {
+variable "ssh_key_name" {
   default = "plato-kp-new"
+}
+
+variable "dns_zone_name" {
+  description = "Domain name"
+  default     = "sol.wtf"
 }

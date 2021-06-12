@@ -1,12 +1,12 @@
 branch-defaults:
   default:
-    environment: Solwtf-env3
+    environment: sol-default-eb-env
 environment-defaults:
-  Solwtf-env3:
+  sol-default-eb-env:
     branch: null
     repository: null
 global:
-  application_name: solwtf
+  application_name: sol-default-eb
   default_ec2_keyname: plato-kp-new
   default_platform: Docker running on 64bit Amazon Linux 2
   default_region: us-east-1

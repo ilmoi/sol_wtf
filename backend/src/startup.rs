@@ -8,7 +8,7 @@ use tracing_actix_web::TracingLogger;
 
 use crate::config::Settings;
 use crate::twitter::routes::pull::{backfill, pull};
-use crate::twitter::routes::serve::{hello, tweets4};
+use crate::twitter::routes::serve::{hello, health, tweets4};
 
 #[tracing::instrument(skip(pg_pool, config))]
 pub fn run(addr: &str, pg_pool: PgPool, config: Settings) -> Result<Server, std::io::Error> {
@@ -27,6 +27,7 @@ pub fn run(addr: &str, pg_pool: PgPool, config: Settings) -> Result<Server, std:
             .wrap(cors)
             .wrap(TracingLogger::default()) //add request_id to actix events
             .service(hello)
+            .service(health)
             .service(tweets4)
             .service(pull)
             .service(backfill)
