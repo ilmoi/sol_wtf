@@ -2,7 +2,7 @@ name: build-deploy-app
 
 # todo: probably should build w/o pushing BEFORE allowing merge > then push on merge
 
-# trigger on push directly to master (this includes PRs that are successfully approved)
+# trigger on push directly to master (this includes PRs that are successfully approved)  
 on:
   push:
     branches: [ master ]
