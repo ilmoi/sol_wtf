@@ -1,15 +1,15 @@
-name: format-app
-
-#todo not using this much right now, but in theory this should block building / deploying if fails. Should also have tests.
-
-# trigger on push to any branch
-on:
-  push
-
-env:
-  CARGO_TERM_COLOR: always
-
-jobs:
+#name: format-app
+#
+##todo not using this much right now, but in theory this should block building / deploying if fails. Should also have tests.
+#
+## trigger on push to any branch
+#on:
+#  push
+#
+#env:
+#  CARGO_TERM_COLOR: always
+#
+#jobs:
 #  clippy:
 #    name: clippy
 #    runs-on: ubuntu-latest
@@ -41,7 +41,7 @@ jobs:
 #        with:
 #          token: ${{ secrets.GITHUB_TOKEN }}
 #          args: --manifest-path ./backend/Cargo.toml -- -D warnings
-
+#
 #  fmt:
 #    name: rustfmt
 #    runs-on: ubuntu-latest
