@@ -97,13 +97,34 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
     namespace = "aws:ec2:vpc"
     value     = "${aws_subnet.public_a.id},${aws_subnet.public_b.id}"
   }
-  # ------------------------------------------------------------------------------ backend health endpoint
-  # todo configure /health on backend
-  #  aws:elasticbeanstalk:application
-  #  aws:elasticbeanstalk:environment:process:process_name - not sure need this
-  #  aws:elbv2:listenerrule:rule_name
+  # ------------------------------------------------------------------------------ backend /health endpoint
+  setting {
+    name = "HealthCheckPath"
+    namespace = "aws:elasticbeanstalk:environment:process:backend"
+    value = "/health"
+  }
+  setting {
+    name = "Rules"
+    namespace = "aws:elbv2:listener:80"
+    value = "health"
+  }
+  setting {
+    name = "PathPatterns"
+    namespace = "aws:elbv2:listenerrule:health"
+    value = "/health"
+  }
+  setting {
+    name = "Process"
+    namespace = "aws:elbv2:listenerrule:health"
+    value = "backend"
+  }
+  setting {
+    name = "Priority"
+    namespace = "aws:elbv2:listenerrule:health"
+    value = "1"
+  }
   # ------------------------------------------------------------------------------ enhanced health monitoring
-  # todo ensure enhanced health works ok
+  # todo ensure enhanced health works ok (200/300/400 show ok) (nginx folder issue again...)
   setting {
     name = "SystemType"
     namespace = "aws:elasticbeanstalk:healthreporting:system"

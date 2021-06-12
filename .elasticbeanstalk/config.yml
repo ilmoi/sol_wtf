@@ -1,6 +1,8 @@
 branch-defaults:
   default:
     environment: sol-default-eb-env
+  master:
+    environment: sol-default-eb-env
 environment-defaults:
   sol-default-eb-env:
     branch: null
