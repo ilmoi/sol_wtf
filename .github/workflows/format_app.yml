@@ -36,7 +36,7 @@ jobs:
           SKIP_DOCKER=true scripts/init_db.sh
       - name: Check sqlx metadata file
         #sqlx offline compilation check
-        cargo run sqlx prepare --check -- --bin backend
+        run: cargo run sqlx prepare --check -- --bin backend
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
