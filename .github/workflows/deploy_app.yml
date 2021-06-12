@@ -152,7 +152,6 @@ jobs:
           rm -rf frontend
           rm -rf nginx
           rm -rf terraform
-          ls -la
 
       - name: Elastic Beanstalk Deployment
         uses: hmanzur/actions-aws-eb@v1.0.0
