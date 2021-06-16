@@ -50,9 +50,9 @@ pub async fn backfill(
 #[tracing::instrument(skip(pool, config))]
 pub async fn pull_timelines_for_followed_users(pool: &PgPool, config: &Settings) {
     let (users, _) = fetch_all_followed_users(config).await.unwrap();
-    let users = &users[..2]; //todo change for testing
+    let users = &users[..]; //todo change for testing
 
-    // loop_until_hit_rate_limit(&users, config, pool, process_user_timeline, 1500).await;
+    loop_until_hit_rate_limit(&users, config, pool, process_user_timeline, 1500).await;
     // loop_until_hit_rate_limit_sync(&users, config, pool, process_user_timeline, 1500).await;
 }
 

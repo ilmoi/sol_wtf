@@ -2,7 +2,6 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use clokwerk::{AsyncScheduler, Scheduler, TimeUnits};
 use sqlx::postgres::PgPoolOptions;
 use sqlx::{ConnectOptions, PgPool};
 use tokio;
@@ -44,7 +43,7 @@ async fn main() -> std::io::Result<()> {
 
     // get a connection pool
     let pg_pool = PgPoolOptions::new()
-        .connect_timeout(std::time::Duration::from_secs(2)) //setting shorter timeout so we find out if db is dead quicker
+        .connect_timeout(std::time::Duration::from_secs(60)) //on purpose setting longer to avoid sqlx PoolTimedOut
         .connect_with(conn_options_w_logging.to_owned())
         .await
         .expect("failed to connect to Postgres");

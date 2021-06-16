@@ -18,6 +18,7 @@ pub async fn schedule_tweet_refresh(pool: Arc<PgPool>, config: Arc<Settings>) {
 
     // don't want to run the below when dev'ing
     if app_env == Environment::Dev {
+        tracing::info!("no scheduler in dev.");
         return;
     }
 
