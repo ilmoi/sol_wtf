@@ -38,7 +38,7 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "MaxSize"
     namespace = "aws:autoscaling:asg"
-    value     = "2" #todo for now 2 max
+    value     = "1" #todo while testing 1 is enough
   }
   setting {
     name      = "BreachDuration"
@@ -79,7 +79,7 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "InstanceTypes"
     namespace = "aws:ec2:instances"
-    value     = "t2.xlarge"
+    value     = "t2.2xlarge" #todo temp
   }
   # ------------------------------------------------------------------------------ vpc
   setting {

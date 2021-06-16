@@ -53,7 +53,7 @@ pub struct TweetMetrics {
 
 // ----------------------------------------------------------------------------- fn
 
-#[tracing::instrument]
+// #[tracing::instrument] todo temp
 pub fn extract_tweet_metrics(tweet: &Value) -> TweetMetrics {
     let like_count = tweet["public_metrics"]["like_count"].as_i64().unwrap();
     let quote_count = tweet["public_metrics"]["quote_count"].as_i64().unwrap();
@@ -72,7 +72,7 @@ pub fn extract_tweet_metrics(tweet: &Value) -> TweetMetrics {
     }
 }
 
-#[tracing::instrument(skip(pool))]
+// #[tracing::instrument(skip(pool))] todo temp
 pub async fn fetch_tweet(pool: &PgPool, tweet_id: &str) -> Result<Tweet, sqlx::error::Error> {
     let res = sqlx::query_as!(
         Tweet,
@@ -86,7 +86,7 @@ pub async fn fetch_tweet(pool: &PgPool, tweet_id: &str) -> Result<Tweet, sqlx::e
     Ok(res)
 }
 
-#[tracing::instrument(skip(pool))]
+// #[tracing::instrument(skip(pool))] todo temp
 #[async_recursion]
 pub async fn store_tweet(
     pool: &PgPool,
@@ -110,10 +110,10 @@ pub async fn store_tweet(
                 "retweeted" => {
                     // NOTE: returns from function, as we only care to store the original post
                     let retweet_id = rt["id"].as_str().unwrap();
-                    tracing::info!(
-                        ">>> Retweet detected, storing original tweet instead (id: {})",
-                        retweet_id
-                    );
+                    // tracing::info!( todo temp
+                    //     ">>> Retweet detected, storing original tweet instead (id: {})",
+                    //     retweet_id
+                    // );
                     let retweet = body["includes"]["tweets"]
                         .as_array()
                         .unwrap()
@@ -193,7 +193,7 @@ pub async fn store_tweet(
 // ----------------------------------------------------------------------------- backfill
 
 /// core = rt_oritinal + normal
-#[tracing::instrument(skip(pool))]
+// #[tracing::instrument(skip(pool))] todo temp
 pub async fn fetch_core_tweets_to_backfill(
     pool: &PgPool,
     days_back: i64,
@@ -240,7 +240,7 @@ pub async fn fetch_core_tweets_to_backfill(
     Ok(tweets)
 }
 
-#[tracing::instrument(skip(pool))]
+// #[tracing::instrument(skip(pool))] todo temp
 pub async fn fetch_helper_tweets_to_backfill(
     pool: &PgPool,
     days_back: i64,
@@ -292,7 +292,7 @@ pub async fn fetch_helper_tweets_to_backfill(
 ///
 /// Order:
 /// - use the newly invented metric above
-#[tracing::instrument(skip(pool))]
+// #[tracing::instrument(skip(pool))] todo temp
 pub async fn fetch_next_page_of_tweets(
     pool: &PgPool,
     form: &web::Query<TweetParams>,
