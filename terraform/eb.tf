@@ -38,12 +38,12 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "MaxSize"
     namespace = "aws:autoscaling:asg"
-    value     = "1" #todo while testing 1 is enough
+    value     = "1" #todo potentially change to 2 when going real prod
   }
   setting {
     name      = "BreachDuration"
     namespace = "aws:autoscaling:trigger"
-    value     = "30" #in mins todo on second thought setting to a large number - machines do long pulls of tweets which use cpu
+    value     = "20" #in mins // on second thought setting to a large number - machines do long pulls of tweets which use cpu
   }
   setting {
     name      = "MeasureName"
@@ -53,7 +53,7 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "Period"
     namespace = "aws:autoscaling:trigger"
-    value     = "30" #in mins
+    value     = "20" #in mins
   }
   setting {
     name      = "Statistic"
@@ -68,18 +68,18 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "LowerThreshold"
     namespace = "aws:autoscaling:trigger"
-    value     = "10"
+    value     = "25" #scale down when cpu below 25%
   }
   setting {
     name      = "UpperThreshold"
     namespace = "aws:autoscaling:trigger"
-    value     = "60"
+    value     = "75" #scale up when cpu above 75%
   }
   # ------------------------------------------------------------------------------ instances
   setting {
     name      = "InstanceTypes"
     namespace = "aws:ec2:instances"
-    value     = "t2.2xlarge" #todo temp
+    value     = "t3a.large" # experimentally determined that this is enough for now
   }
   # ------------------------------------------------------------------------------ vpc
   setting {

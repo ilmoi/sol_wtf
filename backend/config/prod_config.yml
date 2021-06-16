@@ -1,6 +1,6 @@
 app:
   host: "0.0.0.0"
 database:
-  host: "sol-default-db.cwkmm7nagphm.us-east-1.rds.amazonaws.com"
-  password: "dbpwdbpw"
+  host: "PROD_DB_HOST"
+  password: "PROD_DB_PW"
   require_ssl: true

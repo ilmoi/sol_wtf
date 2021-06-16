@@ -38,6 +38,7 @@ pub enum Timeframe {
     Hour,
     Four,
     Day,
+    Twodays,
     Week,
     Month,
 }
@@ -79,6 +80,10 @@ impl fmt::Display for Timeframe {
             }
             Timeframe::Day => {
                 let then = now - Duration::hours(24);
+                write!(f, "{}", then.to_rfc3339())
+            }
+            Timeframe::Twodays => {
+                let then = now - Duration::hours(48);
                 write!(f, "{}", then.to_rfc3339())
             }
             Timeframe::Week => {

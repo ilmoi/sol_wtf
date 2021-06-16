@@ -27,7 +27,7 @@ resource "aws_db_instance" "main" {
   name              = "solwtf"                           #db name within the postgres server
   availability_zone = "${data.aws_region.current.name}a" #putting both the db and the EB instances into A
 
-  instance_class        = "db.t2.large"
+  instance_class        = "db.t3.medium" # experimentally determined that this is enough for now
   allocated_storage     = 100 #todo for now don't see a need for IOPS-optimized, see how perf does
   max_allocated_storage = 500
   storage_type          = "gp2"

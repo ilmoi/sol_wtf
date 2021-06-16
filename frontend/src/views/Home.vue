@@ -27,6 +27,7 @@
             <option>1h</option>
             <option>4h</option>
             <option>24h</option>
+            <option>48h</option>
             <option>1 week</option>
             <!--<option>1 month</option> (!)FOR NOW REMOVING-->
           </select>
@@ -146,6 +147,8 @@ export default {
           return "four"
         case "24h":
           return "day"
+        case "48h":
+          return "twodays"
         case "1 week":
           return "week"
         case "1 month":

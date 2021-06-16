@@ -93,6 +93,11 @@ jobs:
           echo "  access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}" >> backend/secrets/twitter.yml
           echo "  bearer_token: ${{ secrets.TWITTER_BEARER_TOKEN }}" >> backend/secrets/twitter.yml
 
+      - name: Insert db host and pw
+        run: |
+          sed -i -- 's/PROD_DB_HOST/${{ secrets.PROD_DB_HOST }}/g' backend/config/prod_config.yml
+          sed -i -- 's/PROD_DB_PW/${{ secrets.PROD_DB_PW }}/g' backend/config/prod_config.yml
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
