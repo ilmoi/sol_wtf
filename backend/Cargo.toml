@@ -40,6 +40,9 @@ chrono = { version = "0.4.19", features = ["serde"] }
 uuid = { version = "0.8.1", features = ["v4", "serde"] }
 derive_more = "0.99.14"
 reqwest = { version = "0.11.3", features = ["json"] }
+clokwerk = "0.4.0-rc1"
+tokio = { version = "1.6.1", features = ["rt", "rt-multi-thread", "macros"] }
+redis = "0.20.1"
 
 # --------------------------------------------------------------------------------- SQLX
 [dependencies.sqlx]

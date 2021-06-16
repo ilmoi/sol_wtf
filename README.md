@@ -38,6 +38,9 @@ this:
 2. rust book / rustlings
 3. luca's book
 
+# Build
+[tbd - how to build the app locally / in prod]
+
 # Contributions
 
 Welcome at any time. Find me here -> iljamoi@pm.me.

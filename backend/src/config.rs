@@ -51,7 +51,8 @@ impl DbSettings {
     }
 }
 
-enum Environment {
+#[derive(PartialEq)]
+pub enum Environment {
     Dev,
     Prod,
 }
@@ -105,6 +106,7 @@ pub fn get_config() -> Result<Settings, config::ConfigError> {
     //  [prod]
     //  config/ - proper place where db config should be recorded,
     //  [local]
+    //  config/ - proper place where db config should be recorded,
     //  .env - LOCAL COMPILATION only (compilation in CICD uses sqlx-data.json),
     //  docker-compose.yml - LOCAL TESTING only,
     //  .github/workflows/deploy_app.yml - CLIPPY only,

@@ -19,18 +19,41 @@ use crate::twitter::scrapers::v2_api::{
     fetch_all_followed_users, get_single_tweet, get_user_timeline,
 };
 
+// ----------------------------------------------------------------------------- routes (for debugging only)
+
 #[tracing::instrument(skip(pool, config))]
 #[get("/pull")]
-pub async fn pull(pool: web::Data<PgPool>, config: web::Data<Arc<Settings>>) -> impl Responder {
+pub async fn pull(
+    pool: web::Data<Arc<PgPool>>,
+    config: web::Data<Arc<Settings>>,
+) -> impl Responder {
     let config = config.as_ref().deref();
-
-    let (users, _) = fetch_all_followed_users(&config).await.unwrap();
-    let users = &users[..1]; //todo change for testing
-
-    loop_until_hit_rate_limit(&users, config, pool.as_ref(), process_user_timeline, 1500).await;
-    // loop_until_hit_rate_limit_sync(&users, config, pool.as_ref(), process_user_timeline, 1500).await;
-
+    let pool = pool.as_ref().deref();
+    pull_timelines_for_followed_users(pool, config).await;
     HttpResponse::Ok()
+}
+
+#[tracing::instrument(skip(pool, config))]
+#[get("/backfill")]
+pub async fn backfill(
+    pool: web::Data<Arc<PgPool>>,
+    config: web::Data<Arc<Settings>>,
+) -> impl Responder {
+    let config = config.as_ref().deref();
+    let pool = pool.as_ref().deref();
+    backfill_missing_media_and_helper_tweets(pool, config).await;
+    HttpResponse::Ok()
+}
+
+// ----------------------------------------------------------------------------- core
+
+#[tracing::instrument(skip(pool, config))]
+pub async fn pull_timelines_for_followed_users(pool: &PgPool, config: &Settings) {
+    let (users, _) = fetch_all_followed_users(config).await.unwrap();
+    let users = &users[..2]; //todo change for testing
+
+    // loop_until_hit_rate_limit(&users, config, pool, process_user_timeline, 1500).await;
+    // loop_until_hit_rate_limit_sync(&users, config, pool, process_user_timeline, 1500).await;
 }
 
 /// Algo:
@@ -46,40 +69,31 @@ pub async fn pull(pool: web::Data<PgPool>, config: web::Data<Arc<Settings>>) -> 
 /// - BUT: since we never have to backfill a tweet twice, and we'll be calling this func every 15min, the amount will go down over time.
 /// - In other words it should be safe to set days_back to 7.
 #[tracing::instrument(skip(pool, config))]
-#[get("/backfill")]
-pub async fn backfill(pool: web::Data<PgPool>, config: web::Data<Arc<Settings>>) -> impl Responder {
-    let config = config.as_ref().deref();
-
+pub async fn backfill_missing_media_and_helper_tweets(pool: &PgPool, config: &Settings) {
     // 1) process core (normal + rt_orinals) tweets (download media + helpers)
-    let core = fetch_core_tweets_to_backfill(pool.as_ref(), 7)
-        .await
-        .unwrap();
+    let core = fetch_core_tweets_to_backfill(pool, 7).await.unwrap();
     // sometimes a tweet will be deleted (eg 1401933150012559361) - and we keep trying to backfill it. In theory should handle - but for now I'll just let it drop out of timeframe.
-    loop_until_hit_rate_limit(
-        &core,
-        config,
-        pool.as_ref(),
-        process_rt_original_tweet,
-        900, //in theory can ask twitter for remaining
-    )
-    .await;
+    // loop_until_hit_rate_limit(
+    //     &core,
+    //     config,
+    //     pool,
+    //     process_rt_original_tweet,
+    //     900, //in theory can ask twitter for remaining
+    // )
+    // .await;
 
-    // 3) process helper tweets (download media only)
-    let helpers = fetch_helper_tweets_to_backfill(pool.as_ref(), 7)
-        .await
-        .unwrap();
-    loop_until_hit_rate_limit(&helpers, config, pool.as_ref(), process_helper_tweet, 900).await;
+    // 2) process helper tweets (download media only)
+    let helpers = fetch_helper_tweets_to_backfill(pool, 7).await.unwrap();
+    // loop_until_hit_rate_limit(&helpers, config, pool, process_helper_tweet, 900).await;
 
     tracing::info!(
         ">>> Total executed: {} core and {} helpers",
         core.len(),
         helpers.len(),
     );
-
-    HttpResponse::Ok()
 }
 
-// ----------------------------------------------------------------------------- helpers
+// ----------------------------------------------------------------------------- loops
 
 #[tracing::instrument(skip(object_arr, settings, pool, f, rate_limit))]
 pub async fn loop_until_hit_rate_limit<'a, T, Fut>(
@@ -122,6 +136,8 @@ pub async fn loop_until_hit_rate_limit<'a, T, Fut>(
 //         f(settings, pool, object).await;
 //     }
 // }
+
+// ----------------------------------------------------------------------------- helpers
 
 #[tracing::instrument(skip(config, pool))]
 pub async fn process_user_timeline(config: &Settings, pool: &PgPool, user_object: &Value) {
@@ -232,16 +248,3 @@ pub async fn process_helper_tweet(config: &Settings, pool: &PgPool, helper: &Twe
             });
     }
 }
-
-// ----------------------------------------------------------------------------- errors
-
-#[derive(Debug)]
-pub struct MyError(String);
-
-impl std::fmt::Display for MyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "A validation error occured on the input.")
-    }
-}
-
-impl ResponseError for MyError {}

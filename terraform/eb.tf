@@ -150,7 +150,7 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "DeploymentPolicy"
     namespace = "aws:elasticbeanstalk:command"
-    value     = "AllAtOnce"
+    value     = "AllAtOnce" #todo consider switching to immutable if not 0 downtime
   }
   # ------------------------------------------------------------------------------ load balancer
   setting {

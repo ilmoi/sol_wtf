@@ -8,12 +8,26 @@ use tracing_actix_web::TracingLogger;
 
 use crate::config::Settings;
 use crate::twitter::routes::pull::{backfill, pull};
-use crate::twitter::routes::serve::{hello, health, tweets4};
+use crate::twitter::routes::serve::{health, hello, tweets4};
+use clokwerk::{AsyncScheduler, TimeUnits};
 
-#[tracing::instrument(skip(pg_pool, config))]
-pub fn run(addr: &str, pg_pool: PgPool, config: Settings) -> Result<Server, std::io::Error> {
-    let pool = web::Data::new(pg_pool); //important - else get https://stackoverflow.com/questions/56117273/actix-web-reports-app-data-is-not-configured-when-processing-a-file-upload
-    let arc_config = web::Data::new(Arc::new(config));
+#[tracing::instrument(skip(pool, config))]
+pub fn run_server(
+    addr: &str,
+    pool: Arc<PgPool>,
+    config: Arc<Settings>,
+) -> Result<Server, std::io::Error> {
+    let pool = web::Data::new(pool); //important - else get https://stackoverflow.com/questions/56117273/actix-web-reports-app-data-is-not-configured-when-processing-a-file-upload
+    let config = web::Data::new(config);
+
+    // let pool2 = pool.clone();
+    // let arc_config2 = arc_config.clone();
+    //
+    // let mut scheduler = AsyncScheduler::new();
+    // scheduler.every(20.seconds()).run(move || async {
+    //     println!("working!");
+    //     pull_from_run(pool2, arc_config2).await;
+    // });
 
     let server = HttpServer::new(move || {
         let cors = Cors::default()
@@ -32,7 +46,7 @@ pub fn run(addr: &str, pg_pool: PgPool, config: Settings) -> Result<Server, std:
             .service(pull)
             .service(backfill)
             .app_data(pool.clone())
-            .app_data(arc_config.clone())
+            .app_data(config.clone())
     })
     .bind(addr)?
     .run();
