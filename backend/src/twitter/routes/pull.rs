@@ -5,7 +5,7 @@ use std::future::Future;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use actix_web::{get, web, HttpResponse, Responder, ResponseError};
+use actix_web::{get, web, HttpResponse, Responder};
 use serde_json::Value;
 use sqlx::PgPool;
 

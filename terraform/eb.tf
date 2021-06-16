@@ -38,12 +38,12 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "MaxSize"
     namespace = "aws:autoscaling:asg"
-    value     = "3"
+    value     = "2" #todo for now 2 max
   }
   setting {
     name      = "BreachDuration"
     namespace = "aws:autoscaling:trigger"
-    value     = "3" #in mins
+    value     = "30" #in mins todo on second thought setting to a large number - machines do long pulls of tweets which use cpu
   }
   setting {
     name      = "MeasureName"
@@ -53,7 +53,7 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "Period"
     namespace = "aws:autoscaling:trigger"
-    value     = "3" #in mins
+    value     = "30" #in mins
   }
   setting {
     name      = "Statistic"
@@ -79,7 +79,7 @@ resource "aws_elastic_beanstalk_environment" "eb-env" {
   setting {
     name      = "InstanceTypes"
     namespace = "aws:ec2:instances"
-    value     = "t2.large"
+    value     = "t2.xlarge"
   }
   # ------------------------------------------------------------------------------ vpc
   setting {

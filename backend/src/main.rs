@@ -1,20 +1,15 @@
 use std::sync::Arc;
-use std::thread;
-use std::time::Duration;
 
 use sqlx::postgres::PgPoolOptions;
-use sqlx::{ConnectOptions, PgPool};
-use tokio;
+use sqlx::ConnectOptions;
 use tracing::log::LevelFilter::Debug;
 use tracing::subscriber::set_global_default;
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
 use tracing_log::LogTracer;
 use tracing_subscriber::{layer::SubscriberExt, EnvFilter, Registry};
 
-use actix_web::rt::time;
-use backend::config::{get_config, Settings};
+use backend::config::get_config;
 use backend::startup::run_server;
-use backend::twitter::routes::pull::pull_timelines_for_followed_users;
 use backend::twitter::schedulers::tokio_async::schedule_tweet_refresh;
 
 #[actix_web::main]

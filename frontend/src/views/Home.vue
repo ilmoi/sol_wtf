@@ -77,7 +77,7 @@
 
         </HiddenDetails>
 
-        <button @click="pullStuff">pull</button>
+        <!--<button @click="pullStuff">pull</button>-->
 
       </div>
 
@@ -174,7 +174,7 @@ export default {
     //   }).join(' ');
     // },
     async fetchMoreData($state = null) {
-      const data = await fetchSecure("tweets4",
+      const data = await fetchSecure("tweets",
           {
             params: {
               sort_by: this.sort_by,

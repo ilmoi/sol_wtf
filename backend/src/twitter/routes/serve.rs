@@ -96,21 +96,14 @@ impl fmt::Display for Timeframe {
 // ----------------------------------------------------------------------------- fns
 
 #[tracing::instrument]
-#[get("/hello")]
-pub async fn hello() -> impl Responder {
-    HttpResponse::Ok().body("hey there!")
-}
-
-#[tracing::instrument]
 #[get("/health")]
 pub async fn health() -> impl Responder {
     HttpResponse::Ok().body("health ok!")
 }
 
-// http://localhost:5001/tweets4?last_tweet_id=0&sort_by=popularity&timeframe=week
 #[tracing::instrument(skip(pool))]
-#[get("/tweets4")]
-pub async fn tweets4(
+#[get("/tweets")]
+pub async fn serve_tweets(
     form: web::Query<TweetParams>,
     pool: web::Data<Arc<PgPool>>,
 ) -> impl Responder {
