@@ -12,6 +12,7 @@ pub struct Settings {
 pub struct AppSettings {
     pub port: u16,
     pub host: String,
+    pub refresh_freq: u64,
 }
 
 #[derive(serde::Deserialize)]

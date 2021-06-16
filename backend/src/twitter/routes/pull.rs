@@ -51,9 +51,7 @@ pub async fn backfill(
 pub async fn pull_timelines_for_followed_users(pool: &PgPool, config: &Settings) {
     let (users, _) = fetch_all_followed_users(config).await.unwrap();
     let users = &users[..]; //todo change for testing
-
     loop_until_hit_rate_limit(&users, config, pool, process_user_timeline, 1500).await;
-    // loop_until_hit_rate_limit_sync(&users, config, pool, process_user_timeline, 1500).await;
 }
 
 /// Algo:
@@ -73,18 +71,18 @@ pub async fn backfill_missing_media_and_helper_tweets(pool: &PgPool, config: &Se
     // 1) process core (normal + rt_orinals) tweets (download media + helpers)
     let core = fetch_core_tweets_to_backfill(pool, 7).await.unwrap();
     // sometimes a tweet will be deleted (eg 1401933150012559361) - and we keep trying to backfill it. In theory should handle - but for now I'll just let it drop out of timeframe.
-    // loop_until_hit_rate_limit(
-    //     &core,
-    //     config,
-    //     pool,
-    //     process_rt_original_tweet,
-    //     900, //in theory can ask twitter for remaining
-    // )
-    // .await;
+    loop_until_hit_rate_limit(
+        &core,
+        config,
+        pool,
+        process_rt_original_tweet,
+        900, //in theory can ask twitter for remaining
+    )
+    .await;
 
     // 2) process helper tweets (download media only)
     let helpers = fetch_helper_tweets_to_backfill(pool, 7).await.unwrap();
-    // loop_until_hit_rate_limit(&helpers, config, pool, process_helper_tweet, 900).await;
+    loop_until_hit_rate_limit(&helpers, config, pool, process_helper_tweet, 900).await;
 
     tracing::info!(
         ">>> Total executed: {} core and {} helpers",
@@ -139,7 +137,7 @@ pub async fn loop_until_hit_rate_limit<'a, T, Fut>(
 
 // ----------------------------------------------------------------------------- helpers
 
-#[tracing::instrument(skip(config, pool))]
+#[tracing::instrument(skip(config, pool, user_object))]
 pub async fn process_user_timeline(config: &Settings, pool: &PgPool, user_object: &Value) {
     // get timeline
     if let Ok((user_timeline, _)) =
@@ -190,7 +188,7 @@ pub async fn process_user_timeline(config: &Settings, pool: &PgPool, user_object
     }
 }
 
-#[tracing::instrument(skip(config, pool))]
+#[tracing::instrument(skip(config, pool, rt_original))]
 pub async fn process_rt_original_tweet(config: &Settings, pool: &PgPool, rt_original: &Tweet) {
     if let Ok((tweet_body, _)) = get_single_tweet(config, &rt_original.tweet_id).await {
         // 1 media
@@ -234,7 +232,7 @@ pub async fn process_rt_original_tweet(config: &Settings, pool: &PgPool, rt_orig
     }
 }
 
-#[tracing::instrument(skip(config, pool))]
+#[tracing::instrument(skip(config, pool, helper))]
 pub async fn process_helper_tweet(config: &Settings, pool: &PgPool, helper: &Tweet) {
     if let Ok((tweet_body, _)) = get_single_tweet(config, &helper.tweet_id).await {
         handle_media_for_tweet(pool, &tweet_body["data"], &tweet_body)

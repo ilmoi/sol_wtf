@@ -1,5 +1,6 @@
 app:
   port: 5000
+  refresh_freq: 99999999
 database:
   port: 5432
   username: "postgres"

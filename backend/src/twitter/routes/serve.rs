@@ -140,7 +140,7 @@ pub async fn serve_tweets(
         .body(body)
 }
 
-#[tracing::instrument(skip(pool))]
+// #[tracing::instrument(skip(pool, tweet))]
 pub async fn prep_full_tweet(pool: &PgPool, tweet: Tweet) -> FullTweet {
     let author = fetch_user_by_uuid(&pool, tweet.user_id).await.unwrap();
     let media = fetch_all_media_for_tweet(&pool, tweet.id).await.unwrap();

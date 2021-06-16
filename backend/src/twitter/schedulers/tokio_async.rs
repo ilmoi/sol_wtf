@@ -25,14 +25,15 @@ pub async fn schedule_tweet_refresh(pool: Arc<PgPool>, config: Arc<Settings>) {
     }
 
     tokio::spawn(async move {
-        let mut interval = time::interval(Duration::from_secs(60 * 16));
+        let mut interval = time::interval(Duration::from_secs(60 * config.app.refresh_freq));
         interval.tick().await;
 
         // all 3 calls are happening inside the same spawn, so are between themselves synchronous (like they should be)
         loop {
             tracing::info!(">>> START SCHEDULED TWEET REFRESH.");
 
-            tracing::info!(">>> [0/2] Begin 16 min delay"); //intentionally upfront, otherwise on refreshes gets triggered and exhausts api
+            //intentionally upfront, otherwise on refreshes gets triggered and exhausts api
+            tracing::info!(">>> [0/2] Begin {} min delay", config.app.refresh_freq);
             interval.tick().await;
 
             tracing::info!(">>> [1/2] Pull timelines");
