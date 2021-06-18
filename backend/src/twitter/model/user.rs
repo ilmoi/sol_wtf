@@ -4,6 +4,8 @@ use serde_json::Value;
 use sqlx::types::Uuid;
 use sqlx::PgPool;
 
+// ----------------------------------------------------------------------------- structs/enums
+
 #[derive(sqlx::FromRow, Debug, Serialize, Deserialize)]
 pub struct User {
     pub id: Uuid,
@@ -21,7 +23,7 @@ pub struct User {
 
 // ----------------------------------------------------------------------------- fn
 
-// #[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool), level = "debug")]
 pub async fn fetch_user(pool: &PgPool, user_id: &str) -> Result<User, sqlx::error::Error> {
     let res = sqlx::query_as!(
         User,
@@ -35,7 +37,7 @@ pub async fn fetch_user(pool: &PgPool, user_id: &str) -> Result<User, sqlx::erro
     Ok(res)
 }
 
-// #[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool), level = "debug")]
 pub async fn fetch_user_by_uuid(pool: &PgPool, id: Uuid) -> Result<User, sqlx::error::Error> {
     let res = sqlx::query_as!(
         User,
@@ -49,7 +51,7 @@ pub async fn fetch_user_by_uuid(pool: &PgPool, id: Uuid) -> Result<User, sqlx::e
     Ok(res)
 }
 
-// #[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, user), level = "debug")]
 pub async fn store_user(pool: &PgPool, user: &Value) -> Result<(), sqlx::error::Error> {
     sqlx::query!(
         r#"

@@ -1,3 +1,5 @@
+// ----------------------------------------------------------------------------- saved for personal ref
+
 // use std::sync::Arc;
 // use std::thread;
 // use std::time::Duration;
@@ -44,7 +46,7 @@
 //     let pool = pool.as_ref();
 //
 //     let (users, _) = fetch_all_followed_users(&config).await.unwrap();
-//     let users = &users[..2]; //todo change for testing
+//     let users = &users[..];
 //
 //     loop_until_hit_rate_limit(&users, &config, &pool, process_user_timeline, 1500).await;
 //     // loop_until_hit_rate_limit_sync(&users, config, pool.as_ref(), process_user_timeline, 1500).await;

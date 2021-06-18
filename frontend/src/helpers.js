@@ -2,7 +2,9 @@ import axios from 'axios'
 
 let host;
 export const env = process.env.VUE_APP_ENVIRONMENT
+export const version = process.env.VUE_APP_GIT_COMMIT
 console.log(`env is ${env}`)
+console.log(`version is: ${version}`)
 
 // set to prod in Dockerfile
 if (env === 'prod') {

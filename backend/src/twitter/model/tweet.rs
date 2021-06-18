@@ -1,14 +1,16 @@
+use actix_web::web;
 use async_recursion::async_recursion;
 use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::types::Uuid;
 use sqlx::PgPool;
 
-use crate::twitter::domain::media::handle_media_for_tweet;
-use crate::twitter::domain::user::fetch_user;
+use crate::twitter::model::media::handle_media_for_tweet;
+use crate::twitter::model::user::fetch_user;
 use crate::twitter::routes::serve::{SortBy, TweetParams};
-use actix_web::web;
-use serde::{Deserialize, Serialize};
+
+// ----------------------------------------------------------------------------- structs/enums
 
 #[derive(sqlx::FromRow, Debug, Serialize, Deserialize)]
 pub struct Tweet {
@@ -53,26 +55,34 @@ pub struct TweetMetrics {
 
 // ----------------------------------------------------------------------------- fn
 
-// #[tracing::instrument]
-pub fn extract_tweet_metrics(tweet: &Value) -> TweetMetrics {
-    let like_count = tweet["public_metrics"]["like_count"].as_i64().unwrap();
-    let quote_count = tweet["public_metrics"]["quote_count"].as_i64().unwrap();
-    let reply_count = tweet["public_metrics"]["reply_count"].as_i64().unwrap();
-    let retweet_count = tweet["public_metrics"]["retweet_count"].as_i64().unwrap();
+#[tracing::instrument(skip(tweet), level = "debug")]
+pub fn extract_tweet_metrics(tweet: &Value) -> anyhow::Result<TweetMetrics> {
+    let like_count = tweet["public_metrics"]["like_count"]
+        .as_i64()
+        .ok_or(anyhow::anyhow!("no like_count"))?;
+    let quote_count = tweet["public_metrics"]["quote_count"]
+        .as_i64()
+        .ok_or(anyhow::anyhow!("no quote_count"))?;
+    let reply_count = tweet["public_metrics"]["reply_count"]
+        .as_i64()
+        .ok_or(anyhow::anyhow!("no reply_count"))?;
+    let retweet_count = tweet["public_metrics"]["retweet_count"]
+        .as_i64()
+        .ok_or(anyhow::anyhow!("no retweet_count"))?;
     let total_retweet_count = quote_count + retweet_count;
     let popularity_count = total_retweet_count + like_count + reply_count;
 
-    TweetMetrics {
+    Ok(TweetMetrics {
         like_count,
         quote_count,
         reply_count,
         retweet_count,
         total_retweet_count,
         popularity_count,
-    }
+    })
 }
 
-// #[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool), level = "debug")]
 pub async fn fetch_tweet(pool: &PgPool, tweet_id: &str) -> Result<Tweet, sqlx::error::Error> {
     let res = sqlx::query_as!(
         Tweet,
@@ -86,56 +96,70 @@ pub async fn fetch_tweet(pool: &PgPool, tweet_id: &str) -> Result<Tweet, sqlx::e
     Ok(res)
 }
 
-// #[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, tweet, body), level = "debug")]
 #[async_recursion]
 pub async fn store_tweet(
     pool: &PgPool,
     tweet: &Value,
     body: &Value, // not ideal that we have to pass the body here, but I need the media array from "includes"
     tweet_class: &str,
-) -> Result<(), sqlx::error::Error> {
-    let tweet_id = tweet["id"].as_str().unwrap();
-    let author_id = tweet["author_id"].as_str().unwrap();
+) -> anyhow::Result<()> {
+    let tweet_id = tweet["id"].as_str().ok_or(anyhow::anyhow!("no tweet_id"))?;
+    let author_id = tweet["author_id"]
+        .as_str()
+        .ok_or(anyhow::anyhow!("no author_id"))?;
     let author = fetch_user(&pool, author_id).await?; //needed to pass into sqlx query
     let tweet_url = format!("https://twitter.com/{}/status/{}", &author_id, &tweet_id);
-    let tweet_created_at =
-        DateTime::parse_from_rfc3339(tweet["created_at"].as_str().unwrap()).unwrap();
+    let tweet_created_at = DateTime::parse_from_rfc3339(
+        tweet["created_at"]
+            .as_str()
+            .ok_or(anyhow::anyhow!("no created_at"))?,
+    )?;
 
     // handle reference tweets
     let mut replied_to_tweet_id: Option<String> = None;
     let mut quoted_tweet_id: Option<String> = None;
     if let Some(ref_tweets) = tweet.get("referenced_tweets") {
-        for rt in ref_tweets.as_array().unwrap() {
-            match rt["type"].as_str().unwrap() {
+        for rt in ref_tweets
+            .as_array()
+            .ok_or(anyhow::anyhow!("no ref_tweets"))?
+        {
+            match rt["type"].as_str().ok_or(anyhow::anyhow!("no type"))? {
                 "retweeted" => {
                     // NOTE: returns from function, as we only care to store the original post
-                    let retweet_id = rt["id"].as_str().unwrap();
+                    let retweet_id = rt["id"].as_str().ok_or(anyhow::anyhow!("no id"))?;
                     // tracing::info!(
-                    //     ">>> Retweet detected, storing original tweet instead (id: {})",
+                    //     ">>>I: Retweet detected, storing original tweet instead (id: {})",
                     //     retweet_id
                     // );
                     let retweet = body["includes"]["tweets"]
                         .as_array()
-                        .unwrap()
+                        .ok_or(anyhow::anyhow!("no included tweets"))?
                         .iter()
-                        .filter(|&t| t["id"].as_str().unwrap() == retweet_id)
+                        .filter(|&t| t["id"].as_str().expect("no id [impossible]") == retweet_id)
                         .collect::<Vec<&Value>>(); //todo is there a better way (single value) than .collect here?
                     return store_tweet(&pool, &retweet[0], &body, "rt_original").await;
                 }
-                "replied_to" => replied_to_tweet_id = Some(rt["id"].as_str().unwrap().into()),
-                "quoted" => quoted_tweet_id = Some(rt["id"].as_str().unwrap().into()),
-                _ => tracing::info!(">>> unrecognized referenced_tweet type"),
+                "replied_to" => {
+                    replied_to_tweet_id =
+                        Some(rt["id"].as_str().ok_or(anyhow::anyhow!("no id"))?.into())
+                }
+                "quoted" => {
+                    quoted_tweet_id =
+                        Some(rt["id"].as_str().ok_or(anyhow::anyhow!("no id"))?.into())
+                }
+                _ => tracing::info!(">>>I: unrecognized referenced_tweet type"),
             }
         }
     }
 
     // handle metrics
-    let tweet_metrics = extract_tweet_metrics(&tweet);
+    let tweet_metrics = extract_tweet_metrics(&tweet)?;
 
     // fix tweet text
     let tweet_text = tweet["text"]
         .as_str()
-        .unwrap()
+        .ok_or(anyhow::anyhow!("no text"))?
         .replace("&quot;", "\"")
         .replace("&apos;", "'")
         .replace("&lt;", "<")
@@ -193,7 +217,7 @@ pub async fn store_tweet(
 // ----------------------------------------------------------------------------- backfill
 
 /// core = rt_oritinal + normal
-// #[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool), level = "debug")]
 pub async fn fetch_core_tweets_to_backfill(
     pool: &PgPool,
     days_back: i64,
@@ -240,7 +264,7 @@ pub async fn fetch_core_tweets_to_backfill(
     Ok(tweets)
 }
 
-// #[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool), level = "debug")]
 pub async fn fetch_helper_tweets_to_backfill(
     pool: &PgPool,
     days_back: i64,
@@ -292,7 +316,7 @@ pub async fn fetch_helper_tweets_to_backfill(
 ///
 /// Order:
 /// - use the newly invented metric above
-// #[tracing::instrument(skip(pool))]
+#[tracing::instrument(skip(pool, form), level = "debug")]
 pub async fn fetch_next_page_of_tweets(
     pool: &PgPool,
     form: &web::Query<TweetParams>,

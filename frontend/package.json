@@ -13,6 +13,7 @@
     "postcss": "^7",
     "tailwindcss": "npm:@tailwindcss/postcss7-compat",
     "vue": "^2.6.11",
+    "vue-analytics": "^5.22.1",
     "vue-infinite-loading": "^2.4.5",
     "vue-loader": "^15.9.7",
     "vue-router": "^3.2.0",

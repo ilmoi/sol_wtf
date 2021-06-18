@@ -7,7 +7,7 @@ use tokio::time;
 
 use crate::config::Environment;
 use crate::config::Settings;
-use crate::twitter::routes::pull::{
+use crate::twitter::core::jobs::{
     backfill_missing_media_and_helper_tweets, pull_timelines_for_followed_users,
 };
 
@@ -20,7 +20,7 @@ pub async fn schedule_tweet_refresh(pool: Arc<PgPool>, config: Arc<Settings>) {
 
     // don't want to run the below when dev'ing
     if app_env == Environment::Dev {
-        tracing::info!("no scheduler in dev.");
+        tracing::info!(">>>I: no scheduler in dev.");
         return;
     }
 
@@ -30,21 +30,30 @@ pub async fn schedule_tweet_refresh(pool: Arc<PgPool>, config: Arc<Settings>) {
 
         // all 3 calls are happening inside the same spawn, so are between themselves synchronous (like they should be)
         loop {
-            tracing::info!(">>> START SCHEDULED TWEET REFRESH.");
+            tracing::info!(">>>I: Begin scheduled tweet refresh.");
 
             //intentionally upfront, otherwise on refreshes gets triggered and exhausts api
-            tracing::info!(">>> [0/2] Begin {} min delay", config.app.refresh_freq);
+            tracing::info!(">>>I: [0/2] Begin {} min delay", config.app.refresh_freq);
             interval.tick().await;
 
-            tracing::info!(">>> [1/2] Pull timelines");
-            pull_timelines_for_followed_users(pool.clone().as_ref(), config.clone().as_ref()).await;
+            // retry logic already inside
+            tracing::info!(">>>I: [1/2] Pull timelines");
+            pull_timelines_for_followed_users(pool.clone().as_ref(), config.clone().as_ref())
+                .await
+                .unwrap_or_else(|e| {
+                    tracing::error!(">>>E: Failed to pull timelines for users: {}", e);
+                });
 
-            tracing::info!(">>> [2/2] Backfill media/helper tweets");
+            // retry logic already inside
+            tracing::info!(">>>I: [2/2] Backfill media/helper tweets");
             backfill_missing_media_and_helper_tweets(
                 pool.clone().as_ref(),
                 config.clone().as_ref(),
             )
-            .await;
+            .await
+            .unwrap_or_else(|e| {
+                tracing::error!(">>>E: Failed to backfill media/helper tweets: {}", e);
+            });
         }
     });
 }

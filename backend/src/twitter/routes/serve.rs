@@ -1,18 +1,22 @@
 #![allow(clippy::async_yields_async)]
 
-use crate::twitter::domain::media::{fetch_all_media_for_tweet, Media};
-use crate::twitter::domain::tweet::{fetch_next_page_of_tweets, fetch_tweet, Tweet};
-use crate::twitter::domain::user::{fetch_user_by_uuid, User};
-use actix_web::{get, web, HttpResponse, Responder, ResponseError};
-use chrono::Duration;
-use serde::{Deserialize, Serialize};
-use sqlx::types::chrono::Utc;
-use sqlx::PgPool;
 use std::fmt;
 use std::ops::Deref;
 use std::sync::Arc;
 
-// ----------------------------------------------------------------------------- structs & enums
+use actix_web::{get, web, HttpResponse, Responder};
+use chrono::Duration;
+use serde::{Deserialize, Serialize};
+use sqlx::types::chrono::Utc;
+use sqlx::PgPool;
+
+use crate::twitter::model::media::{fetch_all_media_for_tweet, Media};
+use crate::twitter::model::tweet::{fetch_next_page_of_tweets, fetch_tweet, Tweet};
+use crate::twitter::model::user::{fetch_user_by_uuid, User};
+use crate::utils::errors::ApiError;
+use anyhow::Context;
+
+// ----------------------------------------------------------------------------- structs/enums
 
 #[derive(serde::Deserialize, serde::Serialize, Debug)]
 pub struct TweetParams {
@@ -111,19 +115,25 @@ pub async fn health() -> impl Responder {
 pub async fn serve_tweets(
     form: web::Query<TweetParams>,
     pool: web::Data<Arc<PgPool>>,
-) -> impl Responder {
+) -> Result<HttpResponse, ApiError> {
     let pool = pool.as_ref().deref();
-    let tweets = fetch_next_page_of_tweets(pool, &form).await.unwrap();
+    let tweets = fetch_next_page_of_tweets(pool, &form)
+        .await
+        .context("failed to fetch next page of tweets")?;
 
     let mut full_tweets: Vec<FullTweet> = vec![];
 
     for t in tweets.into_iter() {
-        let mut full_tweet = prep_full_tweet(pool, t).await;
+        let mut full_tweet = prep_full_tweet(pool, t)
+            .await
+            .context("failed to prep full tweet")?;
 
         // tries to add a reply tweet, if present
         if let Some(ref reply_tweet_id) = full_tweet.tweet.replied_to_tweet_id {
             if let Ok(reply_tweet) = fetch_tweet(pool, reply_tweet_id).await {
-                let reply_full_tweet = prep_full_tweet(pool, reply_tweet).await;
+                let reply_full_tweet = prep_full_tweet(pool, reply_tweet)
+                    .await
+                    .context("failed to prep full tweet")?;
                 full_tweet.reply_to = Box::new(Some(reply_full_tweet));
             }
         }
@@ -131,7 +141,9 @@ pub async fn serve_tweets(
         // tried to add a quote tweet, if present
         if let Some(ref quote_tweet_id) = full_tweet.tweet.quoted_tweet_id {
             if let Ok(quote_tweet) = fetch_tweet(pool, quote_tweet_id).await {
-                let quote_full_tweet = prep_full_tweet(pool, quote_tweet).await;
+                let quote_full_tweet = prep_full_tweet(pool, quote_tweet)
+                    .await
+                    .context("failed to prep full tweet")?;
                 full_tweet.quote_of = Box::new(Some(quote_full_tweet));
             }
         }
@@ -139,35 +151,22 @@ pub async fn serve_tweets(
         full_tweets.push(full_tweet);
     }
 
-    let body = serde_json::to_string(&full_tweets).unwrap();
-    HttpResponse::Ok()
+    let body = serde_json::to_string(&full_tweets).map_err(|e| anyhow::anyhow!("{}", e))?;
+    Ok(HttpResponse::Ok()
         .content_type("application/json")
-        .body(body)
+        .body(body))
 }
 
-// #[tracing::instrument(skip(pool, tweet))]
-pub async fn prep_full_tweet(pool: &PgPool, tweet: Tweet) -> FullTweet {
-    let author = fetch_user_by_uuid(&pool, tweet.user_id).await.unwrap();
-    let media = fetch_all_media_for_tweet(&pool, tweet.id).await.unwrap();
+#[tracing::instrument(skip(pool, tweet), level = "debug")]
+pub async fn prep_full_tweet(pool: &PgPool, tweet: Tweet) -> Result<FullTweet, sqlx::error::Error> {
+    let author = fetch_user_by_uuid(&pool, tweet.user_id).await?;
+    let media = fetch_all_media_for_tweet(&pool, tweet.id).await?;
 
-    FullTweet {
+    Ok(FullTweet {
         tweet,
         author,
         media: Some(media),
         reply_to: Box::new(None::<FullTweet>),
         quote_of: Box::new(None::<FullTweet>),
-    }
+    })
 }
-
-// ----------------------------------------------------------------------------- errors
-
-#[derive(Debug)]
-pub struct MyError(String);
-
-impl std::fmt::Display for MyError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "A validation error occured on the input.")
-    }
-}
-
-impl ResponseError for MyError {}

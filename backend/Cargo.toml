@@ -25,7 +25,9 @@ tracing = { version = "0.1", features = ["log"] }
 tracing-subscriber = { version = "0.2.12", features = ["registry", "env-filter"] }
 tracing-bunyan-formatter = "0.2.4"
 tracing-log = "0.1.2"
-tracing-actix-web = "0.4.0-beta.1"
+#tracing-actix-web = "0.4.0-beta.1"
+#using someone's PR for compatibility with actix 406 - https://github.com/LukeMathWalker/tracing-actix-web/pull/20
+tracing-actix-web = { git = "https://github.com/dchenk/tracing-actix-web.git", rev = "436ad71"}
 
 # ------------------------------------------------------------------------------ ASYNC
 futures = "0.3.15"
@@ -41,6 +43,10 @@ chrono = { version = "0.4.19", features = ["serde"] }
 uuid = { version = "0.8.1", features = ["v4", "serde"] }
 #derive_more = "0.99.14"
 reqwest = { version = "0.11.3", features = ["json"] }
+thiserror = "1.0.25"
+anyhow = "1.0.41"
+#retry = "1.2.1"
+tokio-retry = "0.3.0"
 #clokwerk = "0.4.0-rc1"
 #redis = "0.20.1"
 
