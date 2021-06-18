@@ -6,9 +6,9 @@
       <div class="m-2">
         <div class="flex">
           <div class="font-bold mr-2">{{ tweet_object.author.twitter_name }}</div>
-          <div class="text-gray-500 mr-2">@{{ tweet_object.author.twitter_handle }}</div>
+          <div class="text-gray-500 dark:text-gray-300 mr-2">@{{ tweet_object.author.twitter_handle }}</div>
         </div>
-        <div class="text-gray-500">{{ tweet_object.tweet.tweet_created_at }}</div>
+        <div class="text-gray-500 dark:text-gray-300">{{ tweet_object.tweet.tweet_created_at }}</div>
       </div>
     </div>
 
@@ -46,12 +46,12 @@ p {
 }
 
 .vertical_line {
-  @apply bg-gray-200 m-4 ml-5;
-  width: 4px;
+  @apply bg-solana-purple dark:bg-solana-green m-4 ml-5;
+  width: 1px;
 }
 
 .media {
-  @apply rounded;
+  @apply rounded-lg;
   width: 100%;
 }
 </style>

@@ -2,14 +2,26 @@
   <div>
     <div class="flex flex-col items-center justify-center" id="top">
       <!--TITLE-->
-      <div class="title">
+      <div class="title adj_width">
         <!--basic-->
+        <!-- :class="this.$store.state.theme === 'dark' ? 'sol-dark' : 'sol-light' "-->
         <h1 class="solwtf">sol.wtf</h1>
         <div class="flex items-center justify-center">
-          <p>wtf is happening on $SOL twitter</p>
+          <p>wtf has happened on</p> <p class="italic text-solana-green dark:text-solana-pink">$SOL</p><p>twitter</p>
           <!--<select class="text-black">-->
             <!--<option>twitter</option>-->
           <!--</select>-->
+        </div>
+        <div class="flex items-center justify-center">
+          <p>over the past </p>
+          <select v-model="timeframe" @change="changeType" class="text-black">
+            <!--<option>1h</option>-->
+            <option>4h</option>
+            <option>24h</option>
+            <option>48h</option>
+            <option>1 week</option>
+            <!--<option>1 month</option> (!)FOR NOW REMOVING-->
+          </select>
         </div>
         <div class="flex items-center justify-center">
           <p>sorted by </p>
@@ -19,17 +31,6 @@
             <option>likes</option>
             <option>replies</option>
             <option>time</option>
-          </select>
-        </div>
-        <div class="flex items-center justify-center">
-          <p>over the past </p>
-          <select v-model="timeframe" @change="changeType" class="text-black">
-            <option>1h</option>
-            <option>4h</option>
-            <option>24h</option>
-            <option>48h</option>
-            <option>1 week</option>
-            <!--<option>1 month</option> (!)FOR NOW REMOVING-->
           </select>
         </div>
 
@@ -71,15 +72,13 @@
           </div>
 
 
-          <div class="mt-4">
-            <input type="checkbox" id="remember" v-model="remember" class="checkbox">
-            <label for="remember">Remember my choices</label>
-          </div>
+          <!--<div class="mt-4">-->
+          <!--  <input type="checkbox" id="remember" v-model="remember" class="checkbox">-->
+          <!--  <label for="remember">Remember my choices</label>-->
+          <!--</div>-->
 
         </HiddenDetails>
-
         <!--<button @click="pullStuff">pull</button>-->
-
       </div>
 
       <!--FEED-->
@@ -90,7 +89,7 @@
             <Tweet :tweet_object="t" v-if="shouldShow(t)"/>
 
             <!--RIGHT-->
-            <!--<TweedEmbed :id="t.tweet.tweet_id" class="tweet-embed">loading...</TweedEmbed>-->
+            <!--<TweedEmbed :id="t.tweet.tweet_id" class="adj_width">loading...</TweedEmbed>-->
           </div>
         </div>
       </div>
@@ -136,6 +135,8 @@ export default {
       hackers: true,
       news: true,
       remember: false,
+      // colors
+      theme: localStorage.getItem('theme') || 'light'
     }
   },
   computed: {
@@ -266,14 +267,16 @@ export default {
       fetchSecure("pull")
     }
   },
+  created() {
+    console.log(this.$store.state.count)
+  }
 }
 </script>
 
 <style>
 .title {
-  @apply bg-blue-600 text-center text-white m-5 p-5 flex flex-col justify-center items-center;
-  width: 550px;
-  /*height: 150px;*/
+  @apply bg-solana-purple dark:bg-solana-green
+  text-center text-white dark:text-black m-5 p-5 py-10 flex flex-col justify-center items-center;
 }
 
 p {
@@ -281,7 +284,9 @@ p {
 }
 
 .solwtf {
-  @apply text-6xl mb-2;
+  @apply fiveh:text-6xl fiveh:text-shadow-sol-lg-l !important;
+  @apply text-4xl fourh:text-5xl text-shadow-sol-md-l fourh:text-shadow-sol-md-l text-solana-green dark:text-solana-pink;
+  @apply mb-5;
   font-family: 'atari', monospace;
 }
 
@@ -289,7 +294,9 @@ p {
   @apply checked:bg-red-500 mr-1 checked:border-black;
 }
 
-.tweet-embed {
-  width: 550px;
+/*applies to both feed header and tweets*/
+.adj_width {
+  min-width: 300px;
+  @apply w-full fivefifty:w-550;
 }
 </style>

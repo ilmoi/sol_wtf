@@ -1,5 +1,5 @@
 <template>
-  <a :href="tweet_object.tweet.tweet_url" target="_blank" class="outer">
+  <a :href="tweet_object.tweet.tweet_url" target="_blank" class="outer adj_width">
     <!--reply-->
     <div v-if="tweet_object.reply_to">
       <RepliedToTweet :tweet_object="tweet_object.reply_to"/>
@@ -10,7 +10,7 @@
       <img :src="tweet_object.author.profile_image" class="rounded-full">
       <div class="m-2">
         <div class="font-bold">{{ tweet_object.author.twitter_name }}</div>
-        <div class="text-gray-500">@{{ tweet_object.author.twitter_handle }}</div>
+        <div class="text-gray-500 dark:text-gray-300">@{{ tweet_object.author.twitter_handle }}</div>
       </div>
     </div>
 
@@ -29,7 +29,7 @@
     </div>
 
     <!--time-->
-    <div class="text-gray-500 m-2">{{ tweet_object.tweet.tweet_created_at }}</div>
+    <div class="text-gray-500 dark:text-gray-300 m-2">{{ tweet_object.tweet.tweet_created_at }}</div>
 
     <!-- likes -->
     <div>
@@ -63,8 +63,9 @@ export default {
 
 <style scoped>
 .outer {
-  @apply border-gray-200 border-solid border p-2 m-2 rounded;
-  width: 550px;
+  @apply bg-solana-verylightpurple dark:bg-solana-verydarkgreen
+  border-solana-purple dark:border-solana-green border-solid border
+  p-2 m-2;
 }
 
 p {
@@ -72,12 +73,12 @@ p {
 }
 
 .line {
-  @apply bg-gray-200;
+  @apply bg-solana-purple dark:bg-solana-green;
   height: 1px;
 }
 
 .outer:hover {
-  @apply bg-gray-50;
+  @apply bg-solana-lightgreen dark:bg-solana-verydarkpink;
 }
 
 .text-body {
@@ -86,7 +87,7 @@ p {
 }
 
 .media {
-  @apply rounded;
+  @apply rounded-lg;
   width: 100%;
 }
 </style>

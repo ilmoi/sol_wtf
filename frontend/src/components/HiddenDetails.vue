@@ -3,9 +3,9 @@
     <div class="img-wrapper" v-if="showDetails">
       <slot/>
     </div>
+    <!--:class="!showDetails ? 'text-green-200' : 'text-gray-200'"-->
     <button
         class="details-btn"
-        :class="!showDetails ? 'text-green-200' : 'text-gray-200'"
         @click="showDetails = !showDetails"
     >
       {{ showDetails ? '^' : '>' }} {{ title }}
@@ -28,7 +28,7 @@ export default {
 
 <style scoped>
 .details-btn {
-  @apply m-2;
+  @apply m-2 underline;
   outline: none;
 }
 

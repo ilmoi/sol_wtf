@@ -6,9 +6,9 @@
       <div class="m-2">
         <div class="flex">
           <div class="font-bold mr-2">{{ tweet_object.author.twitter_name }}</div>
-          <div class="text-gray-500 mr-2">@{{ tweet_object.author.twitter_handle }}</div>
+          <div class="text-gray-500 dark:text-gray-300 mr-2">@{{ tweet_object.author.twitter_handle }}</div>
         </div>
-        <div class="text-gray-500">{{ tweet_object.tweet.tweet_created_at }}</div>
+        <div class="text-gray-500 dark:text-gray-300">{{ tweet_object.tweet.tweet_created_at }}</div>
       </div>
     </div>
 
@@ -41,12 +41,12 @@ p {
 }
 
 .outer {
-  @apply border-gray-200 border-solid border p-2 m-2 rounded text-sm;
+  @apply border-solana-purple dark:border-solana-green border-solid border p-2 m-2 text-sm;
   width: 97% !important;
 }
 
 .media {
-  @apply rounded;
+  @apply rounded-lg;
   width: 100%;
 }
 </style>

@@ -17,11 +17,18 @@ export default {
 
 <style scoped>
 .nav-btn {
-  @apply px-10 py-1 text-black
-  hover:bg-blue-500 hover:text-white flex-shrink-0;
+  @apply px-10 py-1 text-white flex-shrink-0;
+    /*border border-solid border-solana-purple dark:border-solana-verydarkgreen;*/
   outline: none;
 }
+
+.nav-btn:hover {
+  @apply bg-solana-darkpurple dark:bg-solana-darkgreen text-white dark:text-white;
+  /*border border-solid border-solana-verydarkpurple dark:border-solana-green;*/
+}
+
 .active {
-  @apply bg-blue-500 text-white;
+  @apply bg-solana-darkpurple dark:bg-solana-darkgreen text-white dark:text-white;
+  /*border border-solid border-solana-verydarkpurple dark:border-solana-green;*/
 }
 </style>

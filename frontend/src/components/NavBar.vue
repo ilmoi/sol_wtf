@@ -1,6 +1,5 @@
 <template>
-  <!--extra div to control behavior on ultra-narrow screens (min 1000px)-->
-  <div class="bg-blue-300">
+  <div>
     <nav class="nav-bar">
       <NavButton
           v-for="item in public"
@@ -48,7 +47,8 @@ export default {
 <style scoped>
 .nav-bar {
   @apply flex justify-center items-center m-auto
-  bg-red-200;
+  bg-solana-purple dark:bg-solana-verydarkgreen;
+  /*border border-solid border-solana-purple dark:border-solana-green;*/
   /*min-width: 1200px;*/
 }
 
