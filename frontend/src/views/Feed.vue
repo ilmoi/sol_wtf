@@ -45,31 +45,31 @@
             <input v-model="exclude" class="text-black" placeholder="vitalik, satoshi" @input="handleInput(exclude)">
           </div>
 
-          <p class="mt-2">include posts from:</p>
-          <div>
-            <input type="checkbox" id="solana" v-model="solana" class="checkbox">
-            <label for="solana">solana core team</label>
-          </div>
+          <!--<p class="mt-2">include posts from:</p>-->
+          <!--<div>-->
+          <!--  <input type="checkbox" id="solana" v-model="solana" class="checkbox">-->
+          <!--  <label for="solana">solana core team</label>-->
+          <!--</div>-->
 
-          <div>
-            <input type="checkbox" id="projects" v-model="projects" class="checkbox">
-            <label for="projects">projects</label>
-          </div>
+          <!--<div>-->
+          <!--  <input type="checkbox" id="projects" v-model="projects" class="checkbox">-->
+          <!--  <label for="projects">projects</label>-->
+          <!--</div>-->
 
-          <div>
-            <input type="checkbox" id="traders" v-model="traders" class="checkbox">
-            <label for="traders">traders</label>
-          </div>
+          <!--<div>-->
+          <!--  <input type="checkbox" id="traders" v-model="traders" class="checkbox">-->
+          <!--  <label for="traders">traders</label>-->
+          <!--</div>-->
 
-          <div>
-            <input type="checkbox" id="hackers" v-model="hackers" class="checkbox">
-            <label for="hackers">hackers</label>
-          </div>
+          <!--<div>-->
+          <!--  <input type="checkbox" id="hackers" v-model="hackers" class="checkbox">-->
+          <!--  <label for="hackers">hackers</label>-->
+          <!--</div>-->
 
-          <div>
-            <input type="checkbox" id="news" v-model="news" class="checkbox">
-            <label for="news">news outlets</label>
-          </div>
+          <!--<div>-->
+          <!--  <input type="checkbox" id="news" v-model="news" class="checkbox">-->
+          <!--  <label for="news">news outlets</label>-->
+          <!--</div>-->
 
 
           <!--<div class="mt-4">-->
