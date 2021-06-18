@@ -1,13 +1,13 @@
 <template>
   <div>
-    <div class="flex flex-col items-center justify-center" id="top">
+    <div class="flex flex-col items-center justify-center pt-2" id="top">
       <!--TITLE-->
       <div class="title adj_width">
         <!--basic-->
         <!-- :class="this.$store.state.theme === 'dark' ? 'sol-dark' : 'sol-light' "-->
         <h1 class="solwtf">sol.wtf</h1>
         <div class="flex items-center justify-center">
-          <p>wtf has happened on</p> <p class="italic text-solana-green dark:text-solana-pink">$SOL</p><p>twitter</p>
+          <p>wtf happened on</p> <p class="italic text-solana-green dark:text-solana-pink">$SOL</p><p>twitter</p>
           <!--<select class="text-black">-->
             <!--<option>twitter</option>-->
           <!--</select>-->
@@ -276,11 +276,7 @@ export default {
 <style>
 .title {
   @apply bg-solana-purple dark:bg-solana-green
-  text-center text-white dark:text-black m-5 p-5 py-10 flex flex-col justify-center items-center;
-}
-
-p {
-  @apply p-1;
+  text-center text-white dark:text-black my-5 p-5 py-10 flex flex-col justify-center items-center;
 }
 
 .solwtf {
@@ -292,11 +288,5 @@ p {
 
 .checkbox {
   @apply checked:bg-red-500 mr-1 checked:border-black;
-}
-
-/*applies to both feed header and tweets*/
-.adj_width {
-  min-width: 300px;
-  @apply w-full fivefifty:w-550;
 }
 </style>

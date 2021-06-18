@@ -1,6 +1,6 @@
 <template>
-  <div :class="this.$store.state.theme">
-    <div class="text-black dark:text-white bg-white dark:bg-black">
+  <div :class="this.$store.state.theme" class="min-h-screen">
+    <div class="text-black dark:text-white bg-white dark:bg-black min-h-screen">
       <NavBar/>
       <button class="bg-black dark:bg-white bubble-bg" @click="toggleTheme">
         <svg class="w-6 fill-current text-white dark:text-black" version="1.1" id="Capa_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
@@ -122,5 +122,16 @@ export default {
 
 .bubble-bg:focus {
   outline:0 !important;
+}
+
+/*below use in multiple places in the app*/
+
+p {
+  @apply p-1;
+}
+
+.adj_width {
+  min-width: 300px;
+  @apply w-full fivefifty:w-550;
 }
 </style>

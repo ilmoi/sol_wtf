@@ -33,8 +33,9 @@ pub fn run_server(
             .wrap(TracingLogger::default()) //add request_id to actix events
             .service(health)
             .service(serve_tweets)
-            .service(pull)
-            .service(backfill)
+            // todo no need in prod
+            // .service(pull)
+            // .service(backfill)
             .app_data(pool.clone())
             .app_data(config.clone())
     })

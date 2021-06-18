@@ -29,7 +29,7 @@ export default {
           url: "/about",
         },
         {
-          title: "tip",
+          title: "tip the dev ❤️",
           url: "/tip",
         },
       ],
