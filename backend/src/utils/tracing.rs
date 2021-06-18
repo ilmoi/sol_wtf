@@ -23,15 +23,15 @@ pub fn configure_tracing() {
     // https://docs.rs/tracing-subscriber/0.2.18/tracing_subscriber/fmt/struct.SubscriberBuilder.html
     let prod_subscriber = FmtSubscriber::builder()
         .with_max_level(Level::INFO) // inimum level that will be included in output. This OR env_filter should be used to control level of logs
-        // .with_timer(ChronoLocal::rfc3339()) //shows by default with better format
         .with_thread_ids(true)
-        .with_span_events(FmtSpan::FULL)
+        .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .json()
         .finish();
 
     let dev_subscriber = FmtSubscriber::builder()
         .with_env_filter(env_filter) // env_filter let's me use RUST_LOG from terminal to control level of logs
         .with_thread_ids(true)
+        // .with_span_events(FmtSpan::NEW | FmtSpan::CLOSE)
         .pretty()
         .finish();
 

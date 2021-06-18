@@ -1,12 +1,12 @@
 <template>
   <div>
-    about
+    tip
   </div>
 </template>
 
 <script>
 export default {
-
+  name: "Tip"
 }
 </script>
 

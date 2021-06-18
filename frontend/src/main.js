@@ -8,7 +8,8 @@ import VueAnalytics from "vue-analytics";
 Vue.config.productionTip = false
 Vue.use(InfiniteLoading)
 Vue.use(VueAnalytics, {
-  id: 'G-HPLNHBX0YK'
+  id: 'G-HPLNHBX0YK',
+  router
 })
 
 new Vue({
