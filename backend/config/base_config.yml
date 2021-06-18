@@ -1,6 +1,9 @@
 app:
   port: 5000
-  refresh_freq: 16
+  refresh_freq: 60 #in minutes
+  refresh_tweets_per_user: 5 #has to be in 5-100 range
+  followers_for_account: "1397861458441089025" #soldotwtf
+  max_users: 999 #reduce for testing not to waste api limits
 database:
   port: 5432
   username: "postgres"

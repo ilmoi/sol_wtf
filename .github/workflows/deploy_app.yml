@@ -90,10 +90,10 @@ jobs:
           mkdir backend/secrets
           touch backend/secrets/twitter.yml
           echo "twitter:" >> backend/secrets/twitter.yml
-          echo "  consumer_key: ${{ secrets.TWITTER_CONSUMER_KEY }}" >> backend/secrets/twitter.yml
-          echo "  consumer_secret: ${{ secrets.TWITTER_CONSUMER_SECRET }}" >> backend/secrets/twitter.yml
-          echo "  access_token: ${{ secrets.TWITTER_ACCESS_TOKEN }}" >> backend/secrets/twitter.yml
-          echo "  access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}" >> backend/secrets/twitter.yml
+          # echo "  consumer_key: ${{ secrets.TWITTER_CONSUMER_KEY }}" >> backend/secrets/twitter.yml
+          # echo "  consumer_secret: ${{ secrets.TWITTER_CONSUMER_SECRET }}" >> backend/secrets/twitter.yml
+          # echo "  access_token: ${{ secrets.TWITTER_ACCESS_TOKEN }}" >> backend/secrets/twitter.yml
+          # echo "  access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}" >> backend/secrets/twitter.yml
           echo "  bearer_token: ${{ secrets.TWITTER_BEARER_TOKEN }}" >> backend/secrets/twitter.yml
 
       - name: Insert db host and pw

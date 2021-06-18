@@ -13,6 +13,7 @@ use crate::twitter::model::tweet::{
 use crate::twitter::scrapers::specific::fetch_all_followed_users;
 use crate::utils::constants::{RETRY_BASE, RETRY_COUNT_IMPORTANT, RETRY_FACTOR};
 use anyhow::Context;
+use std::cmp::min;
 
 #[tracing::instrument(skip(pool, config))]
 pub async fn pull_timelines_for_followed_users(
@@ -34,8 +35,8 @@ pub async fn pull_timelines_for_followed_users(
         RETRY_COUNT_IMPORTANT
     ))?;
 
-    let users = &users[..]; //todo change for testing
-                            //the below is fallible, but it won't let me propagate error up, so handled inside of loop (only logging, no retries)
+    let users = &users[..min(config.app.max_users, users.len())];
+    //the below is fallible, but it won't let me propagate error up, so handled inside of loop (only logging, no retries)
     loop_until_hit_rate_limit(&users, config, pool, process_user_timeline, 1500).await;
 
     tracing::info!(">>>I: total processed user timelines: {}", users.len());

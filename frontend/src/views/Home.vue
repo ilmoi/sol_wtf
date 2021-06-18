@@ -6,10 +6,10 @@
         <!--basic-->
         <h1 class="solwtf">sol.wtf</h1>
         <div class="flex items-center justify-center">
-          <p>wtf is happening on $SOL</p>
-          <select class="text-black">
-            <option>twitter</option>
-          </select>
+          <p>wtf is happening on $SOL twitter</p>
+          <!--<select class="text-black">-->
+            <!--<option>twitter</option>-->
+          <!--</select>-->
         </div>
         <div class="flex items-center justify-center">
           <p>sorted by </p>

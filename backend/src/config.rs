@@ -13,6 +13,9 @@ pub struct AppSettings {
     pub port: u16,
     pub host: String,
     pub refresh_freq: u64,
+    pub refresh_tweets_per_user: u32,
+    pub followers_for_account: String,
+    pub max_users: usize,
 }
 
 #[derive(serde::Deserialize)]
@@ -27,10 +30,10 @@ pub struct DbSettings {
 
 #[derive(serde::Deserialize)]
 pub struct TwitterSettings {
-    pub consumer_key: String,
-    pub consumer_secret: String,
-    pub access_token: String,
-    pub access_token_secret: String,
+    // pub consumer_key: String, //v1 which I'm not using
+    // pub consumer_secret: String, //v1 which I'm not using
+    // pub access_token: String, //v1 which I'm not using
+    // pub access_token_secret: String, //v1 which I'm not using
     pub bearer_token: String,
 }
 
