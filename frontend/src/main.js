@@ -9,7 +9,7 @@ import {store} from '@/store/store'
 Vue.config.productionTip = false
 Vue.use(InfiniteLoading)
 Vue.use(VueAnalytics, {
-  id: 'G-HPLNHBX0YK',
+  id: 'UA-199682576-2',
   router
 })
 

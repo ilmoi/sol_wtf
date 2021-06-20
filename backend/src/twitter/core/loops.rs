@@ -4,6 +4,7 @@ use std::future::Future;
 use sqlx::PgPool;
 
 use crate::config::Settings;
+use crate::utils::general::type_name_of;
 
 #[tracing::instrument(skip(object_arr, settings, pool, f, rate_limit))]
 pub async fn loop_until_hit_rate_limit<'a, T, Fut>(
@@ -21,17 +22,17 @@ pub async fn loop_until_hit_rate_limit<'a, T, Fut>(
     let total = object_arr.len();
     let capped_total = min(total, rate_limit); // in theory should handle the ones that didn't fit in, but for now cba
 
+    let f_name = type_name_of(f);
     let mut futs = vec![];
     for (i, object) in object_arr[..capped_total].iter().enumerate() {
         futs.push(async move {
             tracing::info!(">>>I: Processing {}/{}", i + 1, total);
-
-            // todo: https://stackoverflow.com/questions/68030477/rust-print-the-name-of-the-function-passed-in-as-argument
             // if try to add ? -> get: cannot use the `?` operator in an async block that returns `()`. So instead handing errors here.
             f(settings, pool, object).await.unwrap_or_else(|e| {
                 tracing::error!(
-                    ">>>E: Failed to process iteration {} of the loop. Function used: Full error: {}",
+                    ">>>E: Failed to process iteration {} of the loop. Function used: {} Full error: {}",
                     i + 1,
+                    f_name,
                     e,
                 );
             });
