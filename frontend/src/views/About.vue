@@ -2,7 +2,7 @@
   <div class="flex flex-col items-center justify-center pt-2">
     <Box>
       <h3>WTF is this sol.wtf thing?</h3>
-      <p>A simple news aggregator for the <a href="solana.com" target="_blank">Solana</a> ($SOL) ecosystem.</p>
+      <p>A simple news aggregator for the <a href="https://solana.com" target="_blank">Solana</a> ($SOL) ecosystem.</p>
       <p>Currently only twitter is supported - later potentially reddit, discord and
         <a href="https://solana.com/community" target="_blank">other platforms</a> will be added.</p>
       <br/>

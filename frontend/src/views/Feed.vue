@@ -35,7 +35,7 @@
         </div>
 
         <!--advanced-->
-        <HiddenDetails title="advanced filters">
+        <HiddenDetails title="advanced filters" :dark-bg="true">
           <div class="flex items-center justify-center">
             <p>include words: </p>
             <input v-model="include" class="text-black" placeholder="sbf, anatoly" @input="handleInput(include)">

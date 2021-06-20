@@ -10,7 +10,7 @@
       <img :src="tweet_object.author.profile_image" class="rounded-full">
       <div class="m-2">
         <div class="font-bold">{{ tweet_object.author.twitter_name }}</div>
-        <div class="text-gray-500 dark:text-gray-300">@{{ tweet_object.author.twitter_handle }}</div>
+        <div class="text-gray-500 dark:text-gray-400">@{{ tweet_object.author.twitter_handle }}</div>
       </div>
     </div>
 
@@ -29,7 +29,7 @@
     </div>
 
     <!--time-->
-    <div class="text-gray-500 dark:text-gray-300 m-2">{{ tweet_object.tweet.tweet_created_at }}</div>
+    <div class="text-gray-500 dark:text-gray-400 m-2">{{ tweet_object.tweet.tweet_created_at }}</div>
 
     <!-- likes -->
     <div>

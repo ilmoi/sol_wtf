@@ -6,9 +6,9 @@
       <div class="m-2">
         <div class="flex">
           <div class="font-bold mr-2">{{ tweet_object.author.twitter_name }}</div>
-          <div class="text-gray-500 dark:text-gray-300 mr-2">@{{ tweet_object.author.twitter_handle }}</div>
+          <div class="text-gray-500 dark:text-gray-400 mr-2">@{{ tweet_object.author.twitter_handle }}</div>
         </div>
-        <div class="text-gray-500 dark:text-gray-300">{{ tweet_object.tweet.tweet_created_at }}</div>
+        <div class="text-gray-500 dark:text-gray-400">{{ tweet_object.tweet.tweet_created_at }}</div>
       </div>
     </div>
 

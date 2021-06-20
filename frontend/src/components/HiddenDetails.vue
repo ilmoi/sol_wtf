@@ -3,9 +3,9 @@
     <div class="img-wrapper" v-if="showDetails">
       <slot/>
     </div>
-    <!--:class="!showDetails ? 'text-green-200' : 'text-gray-200'"-->
     <button
         class="details-btn"
+        :class="textColor"
         @click="showDetails = !showDetails"
     >
       {{ showDetails ? '^' : '>' }} {{ title }}
@@ -17,10 +17,20 @@
 export default {
   props: {
     title: String,
+    darkBg: Boolean,
   },
   data() {
     return {
       showDetails: false
+    }
+  },
+  computed: {
+    textColor() {
+      if (this.darkBg) {
+        return !this.showDetails ? 'text-white dark:text-black' : 'text-gray-300 dark:text-gray-600'
+      } else {
+        return !this.showDetails ? 'text-black dark:text-white' : 'text-gray-500 dark:text-gray-400'
+      }
     }
   }
 }
