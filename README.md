@@ -27,8 +27,8 @@ A few decisions I made along the way:
 - Scheduled tweet pull occurs as part of main runtime. I decided the operation wasn't heavy enough to involve redis / build a job queue.
 - Tweets are pulled every hour. 5 last tweets are pulled for each timeline, without regard for whether they've been pulled previously. This is to update metrics like quote count.
 - Default ranking is by popularity (retweet/quote count + like count + comment count).
-- Twitter's rate limits are a bitch, keep that in mind. You only get 500k tweets/mo and 900 or 1500 api calls (depending on endpoint) per 15min.
-- I had to rebuild twitter's formatting on the front-end because their oembed-js library is slow as fuck.
+- Twitter's rate limits are pretty bad, keep that in mind. You only get 500k tweets/mo and 900 or 1500 api calls (depending on endpoint) per 15min.
+- I had to rebuild twitter's formatting on the front-end because their oembed-js library is very slow.
 
 
 # Development
@@ -79,7 +79,7 @@ this:
 
 # Contributions
 
-Ape in. Any questions, find me here -> iljamoi@pm.me.
+Any questions, find me here -> iljamoi@pm.me.
 
 # License
 
